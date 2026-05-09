@@ -1,0 +1,3 @@
+﻿Analysis,Predictor,Hazard Ratio,95% CI Low,95% CI High,P value,N,Events
+Development,ML predicted risk per 0.10 increase,1.6744827751315998,1.657734449155416,1.6914003118177061,0.0,23901,5272
+Temporal external validation,ML predicted risk per 0.10 increase,1.6472758195567123,1.6186864649848975,1.6763701213264643,0.0,6216,1781

@@ -1,0 +1,4 @@
+﻿Risk group,N,Deaths within horizon,Event percent,Median predicted risk
+Low predicted risk,2072,53,0.02557915057915058,0.034517139196395874
+Medium predicted risk,2072,371,0.17905405405405406,0.15475121140480042
+High predicted risk,2072,1357,0.6549227799227799,0.4858150780200958

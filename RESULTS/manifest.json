@@ -1,0 +1,9 @@
+{
+  "results_dir": "C:\\AI4JUBO\\RESULTS",
+  "training_n": 23901,
+  "external_n": 6216,
+  "features_n": 29,
+  "main_model_label": "HybridXGBRF (Our Approach)",
+  "tables_dir": "C:\\AI4JUBO\\RESULTS\\tables",
+  "figures_dir": "C:\\AI4JUBO\\RESULTS\\figures"
+}

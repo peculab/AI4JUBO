@@ -1,0 +1,30 @@
+﻿Feature,Feature_EN,MeanAbsSHAP
+BW_diff_seq,Body Weight Change,0.11787613185165692
+六個月內住院次數,Hospitalizations within 6 Months,0.09956966293309966
+ADL_last_score,ADL Last Score,0.09589493368233533
+ADL_Min,ADL Minimum,0.014054516233373941
+ADL_std,ADL Standard Deviation,0.013017437129819544
+性別_is_male,Male,0.010282864487436203
+BW_last,Body Weight (Last),0.009951971275919406
+BW_first,Body Weight (First),0.009803706654134632
+ADL_總分_max,ADL Total Max,0.006262880036469215
+first_ 意識總分,Consciousness Score (First),0.004780067410834682
+使用呼吸輔具,Use of Respiratory Aid,0.003977981974050262
+DNR_flag,DNR Flag,0.0026578722246095297
+ADL_first_score,ADL First Score,0.0022569023984963287
+意識總分_diff,Consciousness Score Difference,0.0019499080426967222
+預估年齡,Estimated Age,0.0015923799921214355
+diff_has_feeding_tube,Feeding Tube Change,0.0007761190454966496
+ADL_Max,ADL Maximum,0.0006344743406788104
+ADL_明顯惡化,ADL Significant Deterioration,0.00051897711751803
+last_ 意識總分,Consciousness Score (Last),0.0005061557550437284
+diff_has_denture,Denture Change,0.0004901961765428286
+意識總分Max,Consciousness Score Max,0.0004591364743708895
+had_fall,Had Fall,0.00044184575614714014
+first_has_denture,Has Denture (First),0.0004053726947335392
+ADL_last_CouldNot,ADL Last Could Not Perform,0.00040530206211887815
+last_has_feeding_tube,Has Feeding Tube (Last),0.0003224649208641197
+first_has_feeding_tube,Has Feeding Tube (First),0.00031967083142275294
+last_has_denture,Has Denture (Last),0.00030786521700321303
+ADL_diff_seq,ADL Change,0.00030663947463903596
+ADL_first_CouldNot,ADL First Could Not Perform,0.00030118214497566504
