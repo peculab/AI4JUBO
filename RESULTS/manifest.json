@@ -5,5 +5,8 @@
   "features_n": 29,
   "main_model_label": "HybridXGBRF (Our Approach)",
   "tables_dir": "C:\\AI4JUBO\\RESULTS\\tables",
-  "figures_dir": "C:\\AI4JUBO\\RESULTS\\figures"
+  "figures_dir": "C:\\AI4JUBO\\RESULTS\\figures",
+  "supplemental_data_dir": "C:\\AI4JUBO\\DATA",
+  "excluded_residents_n": 19756,
+  "excluded_adl_missing_n": 6715
 }

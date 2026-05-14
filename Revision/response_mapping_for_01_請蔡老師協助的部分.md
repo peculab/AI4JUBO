@@ -12,10 +12,10 @@
 
 重要提醒：
 
-- `RESULTS` 是 2026-05-08 從原 notebook 的 Google Sheets 重新跑出的結果。部分 external validation 數值與投稿版摘要不同；若採用重跑結果，Abstract、Results、Table 4 要同步更新。
+- `RESULTS` 的主要模型結果原先於 2026-05-08 從原 notebook 的 Google Sheets 重新跑出；2026-05-13 已再用 `DATA` 內新補資料更新排除個案、機構規模/區域、external calibration CI 等補充表。部分 external validation 數值與投稿版摘要不同；若採用重跑結果，Abstract、Results、Table 4 要同步更新。
 - 原 notebook 中 `"HybridXGBRF (Our Approach)"` 實際上似乎是 `XGBClassifier` 物件標籤。回覆時建議避免強調 Hybrid 明顯優於 XGBoost，改成「tree-based models showed comparable high discrimination」。
-- 本檔已依照 `01_請蔡老師協助的部分.docx` 的順序排列：先 Reviewer W 三項，再 Reviewer BK 九項。仍需老師或資料端補充的項目已標示為「仍需資料端補」。
-- 目前仍未完全補齊的子項目：排除者「離開護家的原因」基本分析、機構核定床數/機構大小分層、calibration intercept/slope 的 bootstrap 95% CI。
+- 本檔已依照 `01_請蔡老師協助的部分.docx` 的順序排列：先 Reviewer W 三項，再 Reviewer BK 九項；2026-05-13 已同步更新新補資料可支援的回答與對應檔案。
+- 2026-05-13 已補齊原先未完成的三個子項目：排除者「離開護家的原因」基本分析、排除者機構核定床數/機構大小與區域分層、calibration intercept/slope 的 bootstrap 95% CI。需注意：目前 `area_size.xlsx` 可和新 `DATA` 的排除個案用 `dbname` 合併；原 Google Sheets development/external cohort 經匯入後缺少可用 `dbname` 文字欄位，因此機構大小/區域分層目前主要支援排除者資料，而非完整 included cohort 的機構分層比較。
 
 ---
 
@@ -29,14 +29,21 @@
 
 目前狀態：
 
-目前 `RESULTS` 沒有這張表，因為目前可讀到的 Google Sheets 是已納入分析的 development/external cohorts，不包含「insufficient follow-up 被排除者」完整原始個案資料。
+已用 `DATA\analysis_data_filtering_out_included_ADL_missing_0514.csv`、`DATA\analysis_data_filtering_out_0514.csv` 和 `DATA\area_size.xlsx` 補出排除個案 baseline、ADL missing 排除者摘要、離開護家原因、以及排除者機構大小/區域分層。`included_vs_excluded_insufficient_followup.xlsx` 也已產出，included 端使用原 Google Sheets development + external cohort，excluded 端使用 `DATA` 的排除個案資料。
 
-需要補出的檔案：
+需提醒：included 端目前可比較年齡、性別、DNR、ADL、體重、住院次數、管灌、氧氣使用等欄位；但 included cohort 匯入後沒有可和 `area_size.xlsx` 穩定合併的 `dbname` 文字欄位，因此機構床數/區域分層目前只適合用排除者資料呈現，或等資料端提供 included cohort 的 `dbname`/機構代碼後再補完整。
+
+已補出的檔案：
 
 - `RESULTS\tables\included_vs_excluded_insufficient_followup.xlsx`
-- `RESULTS\tables\excluded_exit_reason_summary.xlsx`，若離開護家原因欄位可取得；也可併入上方 included vs excluded 表格。
+- `RESULTS\tables\excluded_residents_baseline_summary.xlsx`
+- `RESULTS\tables\excluded_adl_missing_baseline_summary.xlsx`
+- `RESULTS\tables\excluded_exit_reason_summary.xlsx`
+- `RESULTS\tables\excluded_region_summary.xlsx`
+- `RESULTS\tables\facility_size_missingness_and_outcome.xlsx`
+- `RESULTS\tables\facility_region_missingness_and_outcome.xlsx`
 
-需要資料端提供欄位：
+目前新資料已提供或部分提供欄位：
 
 - age
 - sex
@@ -46,18 +53,23 @@
 - DNR
 - tube feeding
 - respiratory support / oxygen use
-- falls
+- falls（目前排除者 `had_fall` 幾乎皆缺失，表格中需保留為資料限制）
 - GCS
-- facility region
-- exit/discharge reason from LTCF, especially for excluded residents
+- facility region（排除者可用 `area_size.xlsx` 合併）
+- approved bed capacity / facility size（排除者可用 `area_size.xlsx` 合併）
+- exit/discharge reason from LTCF（已由 `area_size.xlsx` 的 `排除個案_結案原因分析` 提供彙整）
 
-可貼上的 Response Letter 回覆，若資料可補：
+目前補出結果重點：
 
-Thank you for pointing out the potential selection bias introduced by excluding residents without sufficient follow-up for 6-month outcome ascertainment. We added a baseline comparison between included residents and residents excluded because of insufficient follow-up. The new supplementary table compares demographic, functional, clinical, care-related, facility-region, and discharge/exit-reason characteristics between the two groups. We also expanded the Limitations section to clarify how exclusion due to incomplete follow-up may affect model generalizability.
+- 排除個案總數：19,756；其中 ADL missing 排除者：6,715。
+- Included analytic cohort：30,117；排除個案：19,756。
+- 排除者平均年齡 76.6 歲，男性 50.3%，DNR 25.5%，初始 ADL score 32.6，初始體重 55.2 kg。
+- 排除者離開/結案原因前三項：返家照護/家屬自行照顧 10,184（51.5%）、空白/未填寫 3,559（18.0%）、轉院/轉介其他機構 3,345（16.9%）。
+- 排除者機構大小分層：小型 8,996、中型 8,005、大型 2,115；區域分層以南部最多 13,175。
 
-可貼上的 Response Letter 回覆，若資料補不出來：
+可貼上的 Response Letter 回覆：
 
-We agree that excluding residents without sufficient follow-up may introduce selection bias. Unfortunately, the analytic dataset available for model development and validation does not retain complete baseline information for residents excluded before outcome ascertainment. We therefore could not perform a complete included-versus-excluded comparison for this subgroup. We have revised the Limitations section to explicitly acknowledge this limitation and clarify that the model is intended for residents whose 6-month outcome can be ascertained from available LTCF records.
+Thank you for pointing out the potential selection bias introduced by excluding residents without sufficient follow-up for 6-month outcome ascertainment. We added a baseline comparison between included residents and residents excluded because of insufficient follow-up. The new supplementary tables compare available demographic, functional, clinical, and care-related characteristics between the two groups and summarize discharge/exit reasons among excluded residents. We also added facility-size and facility-region summaries for excluded residents using approved bed capacity and regional information available from the data source. Because facility identifiers were not consistently available in the analytic Google Sheets extract used for the included cohort, facility-size and region stratification should be interpreted primarily as a characterization of excluded residents. We expanded the Limitations section to clarify how exclusion due to incomplete follow-up and incomplete facility linkage may affect model generalizability.
 
 建議論文修改位置：
 
@@ -157,11 +169,11 @@ External:
 - XGBoost AUROC = 0.8864
 - Difference = 0.0004
 - 95% CI = -0.0017 to 0.0026
-- Bootstrap P = 0.694
+- Bootstrap P = 0.716
 
 可貼上的 Response Letter 回覆：
 
-We agree that the performance difference between HybridXGBRF and XGBoost should not be overstated. We performed paired bootstrap comparisons of AUROC using paired predictions from the same participants. In the temporal external validation cohort, the AUROC difference was 0.0004, with a 95% CI from -0.0017 to 0.0026 and a bootstrap P value of 0.694. These findings indicate that HybridXGBRF and XGBoost had statistically comparable discrimination. We therefore revised the Abstract, Results, and Discussion to avoid claiming clear superiority of the hybrid model and instead describe the tree-based models as showing comparable high discrimination.
+We agree that the performance difference between HybridXGBRF and XGBoost should not be overstated. We performed paired bootstrap comparisons of AUROC using paired predictions from the same participants. In the temporal external validation cohort, the AUROC difference was 0.0004, with a 95% CI from -0.0017 to 0.0026 and a bootstrap P value of 0.716. These findings indicate that HybridXGBRF and XGBoost had statistically comparable discrimination. We therefore revised the Abstract, Results, and Discussion to avoid claiming clear superiority of the hybrid model and instead describe the tree-based models as showing comparable high discrimination.
 
 建議論文修改：
 
@@ -195,11 +207,12 @@ Subgroup:
 Calibration metrics:
 
 - `RESULTS\tables\calibration_metrics_external_hybridxgbrf.xlsx`
+- `RESULTS\tables\calibration_metrics_external_hybridxgbrf_with_ci.xlsx`
 - `RESULTS\tables\risk_decile_calibration_external_hybridxgbrf.xlsx`
 
 注意：
 
-- Word 原始需求寫到 calibration measures 也要有 95% CI。目前 `table3/table4/table5` 已有主要 performance metrics 的 95% CI；但 `calibration_metrics_external_hybridxgbrf.xlsx` 目前是 point estimates。若要完全對應「calibration measures 表格資料，含 95% CI」，建議再補 bootstrap CI 版本：
+- Word 原始需求寫到 calibration measures 也要有 95% CI。2026-05-13 已補出 bootstrap CI 版本：
   - `RESULTS\tables\calibration_metrics_external_hybridxgbrf_with_ci.xlsx`
 
 目前重跑結果重點：
@@ -214,15 +227,22 @@ Internal selected model:
 
 External selected model, if using regenerated RESULTS:
 
-- AUROC = 0.887 (95% CI 0.878-0.895)
-- Precision = 0.856 (95% CI 0.835-0.876)
-- Recall = 0.482 (95% CI 0.460-0.505)
-- F1 = 0.617 (95% CI 0.596-0.636)
+- AUROC = 0.887 (95% CI 0.879-0.895)
+- Precision = 0.856 (95% CI 0.836-0.878)
+- Recall = 0.482 (95% CI 0.461-0.505)
+- F1 = 0.617 (95% CI 0.596-0.637)
 - Brier = 0.122 (95% CI 0.118-0.125)
+
+External calibration metrics with bootstrap 95% CI:
+
+- Calibration intercept = 0.591 (95% CI 0.525-0.662)
+- Calibration slope = 1.323 (95% CI 1.261-1.393)
+- Observed/Expected ratio = 1.158 (95% CI 1.138-1.179)
+- Brier score = 0.122 (95% CI 0.118-0.125)
 
 可貼上的 Response Letter 回覆：
 
-Thank you for this suggestion. We added uncertainty estimates for the main performance metrics. The revised tables now include 95% confidence intervals for AUROC, accuracy, precision, recall/sensitivity, specificity, F1 score, and Brier score in both internal cross-validation and temporal external validation. We also added 95% confidence intervals for subgroup performance. Calibration was further summarized using calibration intercept, calibration slope, observed/expected ratio, Brier score, and risk-decile calibration.
+Thank you for this suggestion. We added uncertainty estimates for the main performance metrics. The revised tables now include 95% confidence intervals for AUROC, accuracy, precision, recall/sensitivity, specificity, F1 score, and Brier score in both internal cross-validation and temporal external validation. We also added 95% confidence intervals for subgroup performance. Calibration was further summarized using calibration intercept, calibration slope, observed/expected ratio, Brier score, and risk-decile calibration, and bootstrap 95% confidence intervals were added for the numerical calibration metrics in the external validation cohort.
 
 建議 Results 文字：
 
@@ -396,14 +416,21 @@ Facility-level missingness:
 - `RESULTS\tables\facility_missingness_development.xlsx`
 - `RESULTS\tables\facility_missingness_external.xlsx`
 
-仍需資料端確認或補出的檔案：
+機構規模/區域分層：
 
 - `RESULTS\tables\facility_size_missingness_and_outcome.xlsx`
 - `RESULTS\tables\facility_region_missingness_and_outcome.xlsx`
 
+目前狀態：
+
+- 2026-05-13 已用 `DATA\area_size.xlsx` 補出排除個案的機構核定床數、機構大小層級與區域分層。
+- `facility_size_missingness_and_outcome.xlsx` 目前包含排除者小/中/大型機構分層：小型 8,996、中型 8,005、大型 2,115。
+- `facility_region_missingness_and_outcome.xlsx` 目前包含排除者區域分層：北部 1,962、中部 3,818、南部 13,175、東部 161。
+- `facility_missingness_development/external` 仍受原 Google Sheets 匯入欄位限制；若要對 included analytic cohort 做正式機構大小/區域比較，需要資料端提供可合併 `area_size.xlsx` 的 included cohort `dbname` 或機構代碼。
+
 可貼上的 Response Letter 回覆：
 
-Thank you for this important point. We added missingness indicator summaries to evaluate whether missingness differed by outcome status and to better characterize documentation patterns in the routine-care dataset. We also summarized facility-level missingness to assess heterogeneity in documentation completeness across facilities. If facility region and approved bed capacity were available, facilities were further summarized by region and size category to examine whether documentation completeness and outcome rates differed across facility strata. These analyses were added to the supplementary materials, and the Limitations section was expanded to discuss documentation bias and facility-level variation in routine data capture.
+Thank you for this important point. We added missingness indicator summaries to evaluate whether missingness differed by outcome status and to better characterize documentation patterns in the routine-care dataset. We also summarized facility-level missingness to assess heterogeneity in documentation completeness across facilities. Using newly available approved bed capacity and regional information, we further summarized excluded residents by facility size and facility region to examine documentation completeness and follow-up patterns across facility strata. Because the analytic Google Sheets extract did not retain a stable facility identifier for all included residents, facility-size and region analyses were interpreted as supplementary characterization of excluded residents, and the Limitations section was expanded to discuss documentation bias, facility-level variation, and incomplete facility linkage.
 
 建議 Limitations 文字：
 
@@ -475,16 +502,16 @@ Calibration plot:
 
 目前重跑結果：
 
-- Calibration intercept = 0.591
-- Calibration slope = 1.323
+- Calibration intercept = 0.591 (95% CI 0.525-0.662)
+- Calibration slope = 1.323 (95% CI 1.261-1.393)
 - Observed deaths = 1781
 - Expected deaths = 1538.1
-- O/E ratio = 1.158
-- Brier score = 0.122
+- O/E ratio = 1.158 (95% CI 1.138-1.179)
+- Brier score = 0.122 (95% CI 0.118-0.125)
 
 可貼上的 Response Letter 回覆：
 
-We agree that graphical calibration alone is insufficient. We added numerical calibration metrics, including calibration intercept, calibration slope, observed/expected ratio, Brier score, and risk-decile calibration in the temporal external validation cohort. These results are now presented in the supplementary materials, and the calibration figure was revised to include the predicted-probability distribution.
+We agree that graphical calibration alone is insufficient. We added numerical calibration metrics, including calibration intercept, calibration slope, observed/expected ratio, Brier score, and risk-decile calibration in the temporal external validation cohort. We also added bootstrap 95% confidence intervals for the numerical calibration metrics. These results are now presented in the supplementary materials, and the calibration figure was revised to include the predicted-probability distribution.
 
 ---
 
@@ -532,11 +559,16 @@ The individual-level dataset is not publicly available because of privacy and da
    對應檔案：
 
    - `RESULTS\tables\included_vs_excluded_insufficient_followup.xlsx`
-   - `RESULTS\tables\excluded_exit_reason_summary.xlsx`，若離開護家原因可取得
+   - `RESULTS\tables\excluded_residents_baseline_summary.xlsx`
+   - `RESULTS\tables\excluded_adl_missing_baseline_summary.xlsx`
+   - `RESULTS\tables\excluded_exit_reason_summary.xlsx`
+   - `RESULTS\tables\excluded_region_summary.xlsx`
+   - `RESULTS\tables\facility_size_missingness_and_outcome.xlsx`
+   - `RESULTS\tables\facility_region_missingness_and_outcome.xlsx`
 
    對應解釋：
 
-   這兩個檔案用來回答 Reviewer W 對 selection bias 的疑慮。`included_vs_excluded_insufficient_followup.xlsx` 應比較納入分析者與因無法確認 6 個月死亡 outcome 而排除者的 baseline characteristics；`excluded_exit_reason_summary.xlsx` 則用來補充排除者離開護家或追蹤中斷原因。這兩項目前仍需資料端補出，若補不出來，回覆信與 limitations 必須明確承認。
+   這些檔案用來回答 Reviewer W 對 selection bias 的疑慮。`included_vs_excluded_insufficient_followup.xlsx` 比較納入分析者與因無法確認 6 個月死亡 outcome 而排除者的 baseline characteristics；`excluded_residents_baseline_summary.xlsx` 與 `excluded_adl_missing_baseline_summary.xlsx` 進一步整理排除者與 ADL missing 排除者特徵；`excluded_exit_reason_summary.xlsx` 補充排除者離開護家或追蹤中斷原因；`facility_size_missingness_and_outcome.xlsx` 與 `facility_region_missingness_and_outcome.xlsx` 則用來呈現排除者的機構床數/大小與區域分層。需在回覆信註明 included cohort 的機構大小/區域仍缺穩定機構代碼可合併，因此這部分目前作為排除者補充分析。
 
 2. Calibration histogram
 
@@ -634,14 +666,14 @@ The individual-level dataset is not publicly available because of privacy and da
    - `RESULTS\tables\facility_missingness_development.xlsx`
    - `RESULTS\tables\facility_missingness_external.xlsx`
 
-   仍建議補出的檔案：
+   機構規模/區域分層檔案：
 
    - `RESULTS\tables\facility_size_missingness_and_outcome.xlsx`
    - `RESULTS\tables\facility_region_missingness_and_outcome.xlsx`
 
    對應解釋：
 
-   `missingness_indicator_*` 表格用來比較重要變項是否缺值與 outcome 的關聯；`facility_missingness_*` 表格用來檢查不同機構是否有文件紀錄完整度差異。若資料端能提供機構區域與核定床數，應再補 facility size/region stratification，回應 Word 原文提到的小規模 `<50` 床、大規模 `>150` 床，以及機構差異/結果差異。
+   `missingness_indicator_*` 表格用來比較重要變項是否缺值與 outcome 的關聯；`facility_missingness_*` 表格用來檢查不同機構是否有文件紀錄完整度差異。2026-05-13 已用 `area_size.xlsx` 補出排除者的 facility size/region stratification，回應 Word 原文提到的小規模 `<50` 床、大規模 `>150` 床，以及機構差異/結果差異。若要把 included analytic cohort 也納入同一套機構分層，仍需 included cohort 的穩定 `dbname` 或機構代碼。
 
 7. SHAP
 
@@ -659,13 +691,13 @@ The individual-level dataset is not publicly available because of privacy and da
    對應檔案：
 
    - `RESULTS\tables\calibration_metrics_external_hybridxgbrf.xlsx`
+   - `RESULTS\tables\calibration_metrics_external_hybridxgbrf_with_ci.xlsx`
    - `RESULTS\tables\risk_decile_calibration_external_hybridxgbrf.xlsx`
    - `RESULTS\figures\external_validation_calibration_with_histogram.png`
-   - `RESULTS\tables\calibration_metrics_external_hybridxgbrf_with_ci.xlsx`，若要完全符合 Word 中 calibration measures 含 95% CI 的要求，仍建議補出
 
    對應解釋：
 
-   `calibration_metrics_external_hybridxgbrf.xlsx` 用來補 calibration intercept、slope、observed/expected ratio、Brier score；`risk_decile_calibration_*` 用來呈現各風險分層的 predicted vs observed risk；calibration histogram 圖用來視覺化校準與預測風險分布。若要完全符合「calibration measures 含 95% CI」，仍建議另外補 bootstrap CI 版本。
+   `calibration_metrics_external_hybridxgbrf.xlsx` 用來補 calibration intercept、slope、observed/expected ratio、Brier score；`calibration_metrics_external_hybridxgbrf_with_ci.xlsx` 已補 bootstrap 95% CI；`risk_decile_calibration_*` 用來呈現各風險分層的 predicted vs observed risk；calibration histogram 圖用來視覺化校準與預測風險分布。
 
 9. Code / seed / package / preprocessing
 

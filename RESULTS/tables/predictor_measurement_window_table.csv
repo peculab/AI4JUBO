@@ -1,0 +1,31 @@
+﻿Feature,Predictor domain,Measurement window / availability,Revision note,Potential leakage risk
+死亡標記,Outcome,6-month outcome ascertainment,Primary binary outcome; not a predictor,No - outcome column
+性別_is_male,Demographic,At or before admission,Available at baseline,No
+預估年齡,Demographic,At or before admission,Available at baseline,No
+DNR_flag,Care preference/status,At baseline or documented during early LTCF record,Clarify whether DNR status is baseline only or updated during stay,Possible if updated after index date
+ADL_總分_max,Longitudinal extrema,Maximum/minimum value across available observation window,May use post-admission information; define window carefully,Moderate to high
+ADL_first_score,Baseline/first recorded measure,First recorded LTCF assessment,Usable for admission or early-stay prediction if first assessment timing is specified,Low
+ADL_last_score,Last recorded measure,Last available assessment in observation window,May include information after prediction index; needs clarification or early-window sensitivity,High unless restricted to pre-index/early window
+ADL_diff_seq,Longitudinal change/variability,Derived from repeated measures across observation window,Useful for longitudinal risk updating; may not be available at admission,High for admission-time prediction
+ADL_std,Longitudinal change/variability,Derived from repeated measures across observation window,Useful for longitudinal risk updating; may not be available at admission,High for admission-time prediction
+ADL_Max,Longitudinal extrema,Maximum/minimum value across available observation window,May use post-admission information; define window carefully,Moderate to high
+ADL_Min,Longitudinal extrema,Maximum/minimum value across available observation window,May use post-admission information; define window carefully,Moderate to high
+ADL_明顯惡化,Longitudinal change/variability,Derived from repeated measures across observation window,Useful for longitudinal risk updating; may not be available at admission,High for admission-time prediction
+ADL_first_CouldNot,Baseline/first recorded measure,First recorded LTCF assessment,Usable for admission or early-stay prediction if first assessment timing is specified,Low
+ADL_last_CouldNot,Last recorded measure,Last available assessment in observation window,May include information after prediction index; needs clarification or early-window sensitivity,High unless restricted to pre-index/early window
+六個月內住院次數,Prior utilization,"Prior 6 months before index/admission, if defined as pre-admission history",Manuscript should explicitly define look-back window,No if strictly pre-index; possible if counted after admission
+first_has_denture,Baseline/first recorded measure,First recorded LTCF assessment,Usable for admission or early-stay prediction if first assessment timing is specified,Low
+last_has_denture,Last recorded measure,Last available assessment in observation window,May include information after prediction index; needs clarification or early-window sensitivity,High unless restricted to pre-index/early window
+diff_has_denture,Longitudinal change/variability,Derived from repeated measures across observation window,Useful for longitudinal risk updating; may not be available at admission,High for admission-time prediction
+first_ 意識總分,Baseline/first recorded measure,First recorded LTCF assessment,Usable for admission or early-stay prediction if first assessment timing is specified,Low
+last_ 意識總分,Last recorded measure,Last available assessment in observation window,May include information after prediction index; needs clarification or early-window sensitivity,High unless restricted to pre-index/early window
+意識總分Max,Longitudinal extrema,Maximum/minimum value across available observation window,May use post-admission information; define window carefully,Moderate to high
+意識總分_diff,Longitudinal change/variability,Derived from repeated measures across observation window,Useful for longitudinal risk updating; may not be available at admission,High for admission-time prediction
+使用呼吸輔具,Clinical/care event indicator,Routine-care record; timing must be specified,Clarify whether recorded before prediction or any time during stay,Possible if measured after index date
+first_has_feeding_tube,Baseline/first recorded measure,First recorded LTCF assessment,Usable for admission or early-stay prediction if first assessment timing is specified,Low
+last_has_feeding_tube,Last recorded measure,Last available assessment in observation window,May include information after prediction index; needs clarification or early-window sensitivity,High unless restricted to pre-index/early window
+diff_has_feeding_tube,Longitudinal change/variability,Derived from repeated measures across observation window,Useful for longitudinal risk updating; may not be available at admission,High for admission-time prediction
+had_fall,Clinical/care event indicator,Routine-care record; timing must be specified,Clarify whether recorded before prediction or any time during stay,Possible if measured after index date
+BW_first,Baseline/first recorded measure,First recorded LTCF assessment,Usable for admission or early-stay prediction if first assessment timing is specified,Low
+BW_last,Last recorded measure,Last available assessment in observation window,May include information after prediction index; needs clarification or early-window sensitivity,High unless restricted to pre-index/early window
+BW_diff_seq,Longitudinal change/variability,Derived from repeated measures across observation window,Useful for longitudinal risk updating; may not be available at admission,High for admission-time prediction

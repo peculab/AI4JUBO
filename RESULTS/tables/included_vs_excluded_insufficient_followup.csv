@@ -1,0 +1,15 @@
+﻿Characteristic,Included residents,Excluded residents,Missing/Notes
+N residents,30117,19756,
+"Age, years",79.2 (11.8),76.6 (14.9),Included missing=0; excluded missing=0
+Male sex,14919 (49.5%),9929 (50.3%),Included missing=0; excluded missing=0
+DNR,12609 (41.9%),5032 (25.5%),Included missing=0; excluded missing=0
+Initial ADL score,28.1 (31.4),32.6 (30.9),Included missing=326; excluded missing=6861
+Maximum ADL score,30.6 (32.4),34.0 (31.6),Included missing=0; excluded missing=6715
+Initial body weight,52.9 (13.7),55.2 (12.9),Included missing=4665; excluded missing=9584
+Hospitalizations within 6 months,0.7 (1.1),0.3 (0.7),Included missing=0; excluded missing=0
+Initial feeding tube,2689 (9.8%),978 (8.3%),Included missing=2787; excluded missing=7949
+Respiratory aid / oxygen use,1275 (4.7%),407 (3.4%),Included missing=2787; excluded missing=7949
+Fall history,1815 (6.6%),NA,Included missing=2787; excluded missing=19756
+Approved beds,NA,80.0 (54.5),Included missing=0; excluded missing=640
+Small facility (<50 beds),NA,8996 (47.1%),Included missing=0; excluded missing=640
+Large facility (>150 beds),NA,2115 (11.1%),Included missing=0; excluded missing=640
