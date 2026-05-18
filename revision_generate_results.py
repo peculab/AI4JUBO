@@ -32,6 +32,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy.stats import chi2_contingency, ttest_ind
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -804,6 +805,43 @@ def format_n_pct(series: pd.Series, positive_value: object = 1) -> str:
     return f"{n} ({n / len(values) * 100:.1f}%)"
 
 
+def format_p_value(p_value: float | None) -> str:
+    if p_value is None or not np.isfinite(p_value):
+        return "NA"
+    if p_value < 0.001:
+        return "<0.001"
+    return f"{p_value:.3f}"
+
+
+def comparison_p_value(
+    included: pd.Series,
+    excluded: pd.Series,
+    kind: str,
+    positive_value: object = 1,
+) -> str:
+    if kind == "continuous":
+        inc = pd.to_numeric(included, errors="coerce").dropna()
+        exc = pd.to_numeric(excluded, errors="coerce").dropna()
+        if len(inc) < 2 or len(exc) < 2:
+            return "NA"
+        return format_p_value(float(ttest_ind(inc, exc, equal_var=False).pvalue))
+
+    inc = included.dropna()
+    exc = excluded.dropna()
+    if inc.empty or exc.empty:
+        return "NA"
+    table = np.array(
+        [
+            [(inc == positive_value).sum(), (inc != positive_value).sum()],
+            [(exc == positive_value).sum(), (exc != positive_value).sum()],
+        ],
+        dtype=float,
+    )
+    if (table.sum(axis=0) == 0).any() or (table.sum(axis=1) == 0).any():
+        return "NA"
+    return format_p_value(float(chi2_contingency(table, correction=False).pvalue))
+
+
 def baseline_comparison_table(included_df: pd.DataFrame, excluded_df: pd.DataFrame) -> pd.DataFrame:
     variables = [
         ("Age, years", "預估年齡", "continuous"),
@@ -825,6 +863,7 @@ def baseline_comparison_table(included_df: pd.DataFrame, excluded_df: pd.DataFra
             "Characteristic": "N residents",
             "Included residents": str(len(included_df)),
             "Excluded residents": str(len(excluded_df)),
+            "P value": "",
             "Missing/Notes": "",
         }
     ]
@@ -836,20 +875,25 @@ def baseline_comparison_table(included_df: pd.DataFrame, excluded_df: pd.DataFra
         if kind == "continuous":
             inc_text = format_mean_sd(inc)
             exc_text = format_mean_sd(exc)
+            p_value = comparison_p_value(inc, exc, kind)
         elif kind == "binary":
             inc_text = format_n_pct(inc)
             exc_text = format_n_pct(exc)
+            p_value = comparison_p_value(inc, exc, kind)
         elif kind == "category_small":
             inc_text = format_n_pct(inc, "小")
             exc_text = format_n_pct(exc, "小")
+            p_value = comparison_p_value(inc, exc, kind, "小")
         else:
             inc_text = format_n_pct(inc, "大")
             exc_text = format_n_pct(exc, "大")
+            p_value = comparison_p_value(inc, exc, kind, "大")
         rows.append(
             {
                 "Characteristic": label,
                 "Included residents": inc_text,
                 "Excluded residents": exc_text,
+                "P value": p_value,
                 "Missing/Notes": f"Included missing={int(inc.isna().sum())}; excluded missing={int(exc.isna().sum())}",
             }
         )

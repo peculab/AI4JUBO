@@ -10,6 +10,30 @@
 - Survival 分析程式：`C:\AI4JUBO\survival_generate_results.py`
 - 套件版本：`C:\AI4JUBO\RESULTS\package_versions.txt`
 
+## 2026-05-18 更新：included vs excluded 表、p 值與投稿版數據差異追查
+
+本次已完成 Reviewer W / BK 對「excluded because of insufficient follow-up」與補充表的更新：
+
+- `RESULTS\tables\included_vs_excluded_insufficient_followup.xlsx` 已新增 `P value` 欄位。
+- `RESULTS\tables\included_vs_excluded_insufficient_followup_with_p.xlsx` 為同內容的 p-value 標示副本。
+- `RESULTS\tables\development_cohort_plus_current_excluded_insufficient_followup.xlsx` 為仿投稿版 Development Cohort appendix 格式的新表，保留投稿版 development cohort 欄位與數字，並補上目前資料可產出的 insufficient-follow-up excluded residents 欄位。
+- `Revision\20260516\data_discrepancy_and_table_notes.md` 已整理新版程式輸出與投稿最終版數字不同的原因。
+- `Revision\01_需蔡老師補做資料表\COMPLETED_Development_Cohort_included_vs_excluded_insufficient_followup.docx` 已將原本 placeholder 的 Development Cohort Word 表補完。
+- `Revision\01_需蔡老師補做資料表\COMPLETED_95CI_tables.docx` 已將 95% CI Word 表補完。
+
+主要差異原因如下：
+
+- 新版 `included_vs_excluded_insufficient_followup` 的 included cohort 是 development + external validation 合併後的 analytic residents，`N = 30,117`；投稿版 Table 1 / Development Cohort appendix 是 development cohort only，`N = 23,901`。因此 age、ADL、tube feeding、respiratory support、falls、body weight、hospitalizations 等數字不會完全一致。
+- 新版表格的 binary/categorical 百分比使用非缺失分母。例如 initial feeding tube 是 `2,689 / 27,330 = 9.8%`，因為 included 端此欄有 2,787 人缺失；投稿版多數欄位使用 cohort total 作分母，例如 `2,081 / 23,901 = 8.7%`。
+- facility size / region 目前可由 `DATA\area_size.xlsx` 合併到 excluded residents；但 Google Sheets analytic-cohort extract 不保留穩定可合併的 included cohort `dbname`，所以 included facility-size/region 欄位仍需標註限制。
+- CIRS-G 與部分原投稿版 excluded-without-ADL 欄位不在目前 insufficient-follow-up excluded-resident 檔案內，因此 manuscript-style 新表以 `NA` 保留，不做推估。
+
+本次補上的 p 值規則：
+
+- 連續變項使用 Welch two-sample t test。
+- binary/categorical 變項使用 nonmissing 2 x 2 chi-square test。
+- 任一組沒有可用資料或欄位無法比較者標示 `NA`。
+
 重要提醒：
 
 - `RESULTS` 的主要模型結果原先於 2026-05-08 從原 notebook 的 Google Sheets 重新跑出；2026-05-13 已再用 `DATA` 內新補資料更新排除個案、機構規模/區域、external calibration CI 等補充表。部分 external validation 數值與投稿版摘要不同；若採用重跑結果，Abstract、Results、Table 4 要同步更新。

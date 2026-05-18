@@ -9,6 +9,37 @@
 - 表格：`C:\AI4JUBO\RESULTS\tables`
 - 圖檔：`C:\AI4JUBO\RESULTS\figures`
 
+## 2026-05-18 完成狀態
+
+這個資料夾內原本需要補做的兩份 Word 表格已完成：
+
+- `COMPLETED_95CI_tables.docx`
+  - 已補 Table 3 internal CV performance 的 95% CI。
+  - 已補 Table 4 external validation performance 的 95% CI。
+  - 已補 Table 5 subgroup performance 的 95% CI。
+  - Table 4 另補上 Brier score 95% CI row。
+- `COMPLETED_Development_Cohort_included_vs_excluded_insufficient_followup.docx`
+  - 已把原本 `n = ???` 的 excluded subjects due to insufficient follow-up 補為 `n = 19,756`。
+  - 已補 age、age group、sex、DNR、ADL first/max/last、GCS、dentures、tube feeding、respiratory support、body weight、hospitalizations 等目前資料可產出的欄位。
+  - 已補 p 值；CIRS-G 與 falls 因目前 insufficient-follow-up excluded-resident 資料不可用，保留 `NA`。
+
+同一資料夾也已放入可直接交付的 Excel 表：
+
+- `included_vs_excluded_insufficient_followup.xlsx`
+- `included_vs_excluded_insufficient_followup_with_p.xlsx`
+- `development_cohort_plus_current_excluded_insufficient_followup.xlsx`
+- `table3_internal_cv_performance_with_ci.xlsx`
+- `table4_external_validation_full_with_ci.xlsx`
+- `table4_external_validation_paper_friendly.xlsx`
+- `table5_subgroup_performance_with_ci.xlsx`
+- `calibration_metrics_external_hybridxgbrf_with_ci.xlsx`
+
+新版與投稿版數據不同的原因已整理在：
+
+- `C:\AI4JUBO\Revision\20260516\data_discrepancy_and_table_notes.md`
+
+最重要的判讀：新版 included/excluded comparison 的 included 端是 development + external validation 合併後 `N = 30,117`，而投稿版 Development Cohort appendix 是 development cohort only `N = 23,901`；此外新版 binary/categorical 百分比使用非缺失分母，因此 tube feeding、respiratory support 等百分比會和投稿版不同。
+
 重要版本提醒：
 
 - 這批 `RESULTS` 是 2026-05-08 從原 notebook 的 Google Sheets 重新跑出來的結果。
@@ -260,42 +291,29 @@ We revised the Methods and figure caption for the SHAP analysis to specify that 
 
 ## F. `(Revision)Development_Cohort.docx 的副本.docx`
 
-這份是「追蹤未達 6 個月的排除個案」baseline comparison。這個目前不能用現有 `RESULTS` 直接補滿。
+這份是「追蹤未達 6 個月的排除個案」baseline comparison。2026-05-18 已用 `DATA\analysis_data_filtering_out_included_ADL_missing_0514.csv`、`DATA\analysis_data_filtering_out_0514.csv` 與 `DATA\area_size.xlsx` 補完目前資料可產出的欄位。完成版 Word 為 `COMPLETED_Development_Cohort_included_vs_excluded_insufficient_followup.docx`，對應 Excel 為 `development_cohort_plus_current_excluded_insufficient_followup.xlsx`。
 
 ### 目前狀態
 
-Word 內仍是 placeholder：
+已完成：
 
-- Excluded subjects due to insufficient follow-up: `n = ???`
-- 各 baseline 欄位皆未填。
+- Excluded subjects due to insufficient follow-up: `n = 19,756`。
+- 已填入目前資料可產出的 baseline 欄位與 p 值。
+- CIRS-G 與 falls 因目前 insufficient-follow-up excluded-resident 檔案無可用資料，保留為 `NA`。
+- 新版 `included_vs_excluded_insufficient_followup.xlsx` 也已補上 `P value` 欄位。
 
-現有 `RESULTS` 可提供：
+已完成檔案：
 
-- `facility_missingness_development.xlsx`
-- `facility_missingness_external.xlsx`
-- `missingness_indicator_development.xlsx`
-- `missingness_indicator_external.xlsx`
+- `COMPLETED_Development_Cohort_included_vs_excluded_insufficient_followup.docx`
+- `development_cohort_plus_current_excluded_insufficient_followup.xlsx`
+- `included_vs_excluded_insufficient_followup_with_p.xlsx`
+- `C:\AI4JUBO\Revision\20260516\data_discrepancy_and_table_notes.md`
 
-但這些不是「追蹤未達 6 個月排除個案」baseline table，不能替代該表。
+資料限制與判讀：
 
-### 需要資料端補出的檔案/資料
-
-請蔡老師或資料端提供下列其中一種：
-
-1. 一份 `excluded_insufficient_followup` 個案資料，至少含：
-   - age
-   - sex
-   - DNR
-   - ADL first/max/last if available
-   - GCS
-   - denture
-   - tube feeding
-   - respiratory support
-   - fall history
-   - body weight
-   - number of admissions in six months
-   - institutional region
-2. 或直接提供已彙整好的 included vs excluded baseline table。
+- 本次 comparison 的 included 端若使用 `included_vs_excluded_insufficient_followup`，是 development + external validation 合併後 `N = 30,117`；投稿版 Development Cohort appendix 是 development cohort only `N = 23,901`。
+- 新版 binary/categorical 百分比使用非缺失分母，因此與投稿版使用 cohort total 分母的欄位會不同。
+- facility size / region 可用於 excluded residents，但 included cohort 缺穩定可合併的 `dbname`，所以 included facility-size/region 仍需在回覆與限制中說明。
 
 建議輸出檔名：
 
@@ -341,5 +359,6 @@ Reviewer response 或 supplement 建議順序：
 8. New Table Sx: `risk_decile_calibration_external_hybridxgbrf.xlsx`
 9. Revised/New Figure Sx: `external_validation_calibration_with_histogram.png`
 10. New Table/Figure Sx: `shap_feature_importance.xlsx` and `shap_feature_importance.png`
-11. Still needed from data side: `included_vs_excluded_insufficient_followup.xlsx`
-
+11. Completed Table Sx: `included_vs_excluded_insufficient_followup_with_p.xlsx`
+12. Completed Table Sx: `development_cohort_plus_current_excluded_insufficient_followup.xlsx`
+13. Completed Word handoff: `COMPLETED_Development_Cohort_included_vs_excluded_insufficient_followup.docx`
