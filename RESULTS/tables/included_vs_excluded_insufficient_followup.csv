@@ -9,7 +9,7 @@ Initial body weight,52.9 (13.7),55.2 (12.9),<0.001,Included missing=4665; exclud
 Hospitalizations within 6 months,0.7 (1.1),0.3 (0.7),<0.001,Included missing=0; excluded missing=0
 Initial feeding tube,2689 (9.8%),978 (8.3%),<0.001,Included missing=2787; excluded missing=7949
 Respiratory aid / oxygen use,1275 (4.7%),407 (3.4%),<0.001,Included missing=2787; excluded missing=7949
-Fall history,1815 (6.6%),,NA,Included missing=2787; excluded missing=19756
-Approved beds,,80.0 (54.5),NA,Included missing=0; excluded missing=640
-Small facility (<50 beds),,8996 (47.1%),NA,Included missing=0; excluded missing=640
-Large facility (>150 beds),,2115 (11.1%),NA,Included missing=0; excluded missing=640
+Fall history,1815 (6.6%),NA,NA,Included missing=2787; excluded missing=19756
+Approved beds,NA,80.0 (54.5),NA,Included missing=0; excluded missing=640
+Small facility (<50 beds),NA,8996 (47.1%),NA,Included missing=0; excluded missing=640
+Large facility (>150 beds),NA,2115 (11.1%),NA,Included missing=0; excluded missing=640

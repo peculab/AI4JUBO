@@ -226,12 +226,77 @@ def select_features(train_df: pd.DataFrame, missing_cutoff: float = 0.30) -> lis
     return features
 
 
-def prepare_xy(df: pd.DataFrame, features: list[str]) -> tuple[pd.DataFrame, pd.Series]:
+ZERO_IMPUTE_FEATURES = {
+    "性別_is_male",
+    "DNR_flag",
+    "ADL_明顯惡化",
+    "ADL_first_CouldNot",
+    "ADL_last_CouldNot",
+    "六個月內住院次數",
+    "first_has_denture",
+    "last_has_denture",
+    "diff_has_denture",
+    "使用呼吸輔具",
+    "first_has_feeding_tube",
+    "last_has_feeding_tube",
+    "diff_has_feeding_tube",
+    "had_fall",
+}
+
+
+def model_feature_columns(features: list[str]) -> list[str]:
+    return [c for c in features if c != OUTCOME_COL]
+
+
+def fit_preprocessing(df: pd.DataFrame, features: list[str]) -> dict[str, object]:
     missing = [c for c in features if c not in df.columns]
     if missing:
         raise ValueError(f"Missing columns in input data: {missing}")
-    data = df[features].copy().fillna(0)
-    X = data.drop(columns=[OUTCOME_COL])
+
+    feature_cols = model_feature_columns(features)
+    zero_cols = [c for c in feature_cols if c in ZERO_IMPUTE_FEATURES]
+    continuous_cols = [c for c in feature_cols if c not in ZERO_IMPUTE_FEATURES]
+    numeric = df[feature_cols].apply(pd.to_numeric, errors="coerce")
+    means = numeric[continuous_cols].mean(skipna=True).fillna(0.0)
+    stds = numeric[continuous_cols].std(skipna=True, ddof=0).replace(0, 1.0).fillna(1.0)
+    return {
+        "features": list(features),
+        "feature_cols": feature_cols,
+        "zero_cols": zero_cols,
+        "continuous_cols": continuous_cols,
+        "means": means,
+        "stds": stds,
+    }
+
+
+def apply_preprocessing(df: pd.DataFrame, preprocessing: dict[str, object]) -> pd.DataFrame:
+    features = list(preprocessing["features"])
+    missing = [c for c in features if c not in df.columns]
+    if missing:
+        raise ValueError(f"Missing columns in input data: {missing}")
+
+    feature_cols = list(preprocessing["feature_cols"])
+    zero_cols = list(preprocessing["zero_cols"])
+    continuous_cols = list(preprocessing["continuous_cols"])
+    means = preprocessing["means"]
+    stds = preprocessing["stds"]
+
+    numeric = df[feature_cols].apply(pd.to_numeric, errors="coerce")
+    X = pd.DataFrame(index=df.index)
+    for col in zero_cols:
+        X[col] = numeric[col].fillna(0.0)
+    for col in continuous_cols:
+        X[col] = ((numeric[col] - means[col]) / stds[col]).fillna(0.0)
+    return X[feature_cols]
+
+
+def prepare_xy(
+    df: pd.DataFrame,
+    features: list[str],
+    preprocessing: dict[str, object] | None = None,
+) -> tuple[pd.DataFrame, pd.Series]:
+    preprocessing = preprocessing or fit_preprocessing(df, features)
+    X = apply_preprocessing(df, preprocessing)
     y = df[OUTCOME_COL].astype(int)
     return X, y
 
@@ -368,6 +433,8 @@ def internal_cv(
     y: pd.Series,
     n_boot: int,
     random_state: int,
+    raw_df: pd.DataFrame | None = None,
+    features: list[str] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, np.ndarray], np.ndarray, dict[str, object]]:
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
     oof_probs_all: dict[str, np.ndarray] = {}
@@ -381,7 +448,12 @@ def internal_cv(
         oof_probs = np.zeros(len(y_arr), dtype=float)
         fold_metrics = []
         for fold, (train_idx, test_idx) in enumerate(skf.split(X, y), start=1):
-            X_train, X_test = X.iloc[train_idx].copy(), X.iloc[test_idx].copy()
+            if raw_df is not None and features is not None:
+                fold_preprocessing = fit_preprocessing(raw_df.iloc[train_idx], features)
+                X_train, _ = prepare_xy(raw_df.iloc[train_idx], features, fold_preprocessing)
+                X_test, _ = prepare_xy(raw_df.iloc[test_idx], features, fold_preprocessing)
+            else:
+                X_train, X_test = X.iloc[train_idx].copy(), X.iloc[test_idx].copy()
             y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
             estimator = clone(model)
             try:
@@ -400,7 +472,7 @@ def internal_cv(
         oof_probs_all[model_name] = oof_probs
 
         final_estimator = clone(model)
-        final_estimator.fit(X.fillna(0), y)
+        final_estimator.fit(X, y)
         trained_models[model_name] = final_estimator
 
         point = point_metrics(y_arr, oof_probs)
@@ -439,9 +511,9 @@ def external_validation(
     for model_name, model in models.items():
         print(f"[External] {model_name}")
         estimator = clone(model)
-        estimator.fit(X_train.fillna(0), y_train)
+        estimator.fit(X_train, y_train)
         fitted[model_name] = estimator
-        prob = get_positive_proba(estimator, X_ext.fillna(0))
+        prob = get_positive_proba(estimator, X_ext)
         probs_all[model_name] = prob
         point = point_metrics(y_arr, prob)
         ci = stratified_bootstrap_metrics(y_arr, prob, n_boot=n_boot, random_state=random_state)
@@ -1120,8 +1192,9 @@ def main() -> int:
 
     train_df, external_df = load_data(args)
     features = select_features(train_df)
-    X, y = prepare_xy(train_df, features)
-    ex_X, ex_y = prepare_xy(external_df, features)
+    preprocessing = fit_preprocessing(train_df, features)
+    X, y = prepare_xy(train_df, features, preprocessing)
+    ex_X, ex_y = prepare_xy(external_df, features, preprocessing)
     models = build_models()
 
     save_df(pd.DataFrame({"Feature": features}), results_dir / "tables" / "selected_features")
@@ -1142,7 +1215,13 @@ def main() -> int:
     oof_true = y.to_numpy()
     if not args.skip_cv:
         cv_summary, cv_folds, oof_probs_all, oof_true, _ = internal_cv(
-            models, X, y, n_boot=args.n_boot_fast, random_state=args.random_state
+            models,
+            X,
+            y,
+            n_boot=args.n_boot_fast,
+            random_state=args.random_state,
+            raw_df=train_df,
+            features=features,
         )
         save_df(cv_summary, results_dir / "tables" / "table3_internal_cv_performance_with_ci")
         save_df(cv_folds, results_dir / "tables" / "internal_cv_fold_metrics")
@@ -1210,7 +1289,7 @@ def main() -> int:
             results_dir / "tables" / "table5_subgroup_performance_with_ci",
         )
         if not args.skip_shap:
-            shap_outputs(fitted_models[main_model], ex_X.fillna(0), results_dir, args.random_state)
+            shap_outputs(fitted_models[main_model], ex_X, results_dir, args.random_state)
 
     dca_external = decision_curve_df(ex_y.to_numpy(), ext_probs, np.linspace(0.05, 0.95, 19))
     save_df(dca_external, results_dir / "tables" / "decision_curve_external_validation")

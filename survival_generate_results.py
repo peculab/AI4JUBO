@@ -96,8 +96,8 @@ def fit_ml_risk_model(X_train: pd.DataFrame, y_train: pd.Series, X_eval: pd.Data
         subsample=1.0,
         verbosity=0,
     )
-    model.fit(X_train.fillna(0), y_train)
-    return model.predict_proba(X_eval.fillna(0))[:, 1]
+    model.fit(X_train, y_train)
+    return model.predict_proba(X_eval)[:, 1]
 
 
 def harrell_c_index(time: np.ndarray, event: np.ndarray, risk: np.ndarray) -> float:
@@ -314,8 +314,9 @@ def main() -> int:
     ensure_dirs()
     train_df, ext_df = base.load_data(args)
     features = base.select_features(train_df)
-    X_train, y_train = base.prepare_xy(train_df, features)
-    X_ext, y_ext = base.prepare_xy(ext_df, features)
+    preprocessing = base.fit_preprocessing(train_df, features)
+    X_train, y_train = base.prepare_xy(train_df, features, preprocessing)
+    X_ext, y_ext = base.prepare_xy(ext_df, features, preprocessing)
 
     train_time, train_event = survival_outcome(train_df, args.horizon)
     ext_time, ext_event = survival_outcome(ext_df, args.horizon)
