@@ -15,6 +15,20 @@
 - `RESULTS/tables/included_vs_excluded_insufficient_followup.csv` and `.xlsx`: original generated table with `P value` added.
 - `RESULTS/tables/included_vs_excluded_insufficient_followup_with_p.csv` and `.xlsx`: duplicate p-value-labeled copy.
 - `RESULTS/tables/development_cohort_plus_current_excluded_insufficient_followup.csv` and `.xlsx`: manuscript-style table preserving the submitted Development Cohort appendix columns and adding what can currently be produced for excluded residents with insufficient follow-up/outcome ascertainment.
+- `RESULTS/tables/facility_region_size_overview_20260516.csv` and `.xlsx`: overview of the newly provided facility-region and facility-size workbook.
+- `RESULTS/tables/excluded_residents_by_facility_size_20260516.csv` and `.xlsx`: resident-level excluded cohort linked to facility size by `dbname`.
+- `RESULTS/tables/excluded_residents_by_region_20260516.csv` and `.xlsx`: excluded-resident region distribution supplied in the workbook.
+- `RESULTS/figures/training_facility_region_size_20260516.png` and `RESULTS/figures/excluded_facility_region_size_20260516.png`: bar charts for facility-region/size characterization.
+
+## Facility Region And Size Update
+
+The newly added `Revision/20260516/機構區域與大小.xlsx` improves the facility-size and region response, especially for excluded residents:
+
+- Training/development facility roster: 493 facilities; small 311, medium 148, large 34; south 332, central 100, north 54, east 7.
+- Excluded residents by region: north 2,112, central 4,019, south 13,447, east 174, islands 4.
+- Excluded residents by facility size after `dbname` linkage: small 9,218, medium 8,211, large 2,233, unknown 94.
+
+This workbook is still not a resident-level included analytic cohort file. It supports facility-level characterization of the development/training facility roster and resident-level excluded-resident stratification, but it does not fully support resident-level included versus excluded facility-size/region testing.
 
 ## Statistical tests
 

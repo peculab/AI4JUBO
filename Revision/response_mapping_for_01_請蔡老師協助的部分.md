@@ -34,6 +34,49 @@
 - binary/categorical 變項使用 nonmissing 2 x 2 chi-square test。
 - 任一組沒有可用資料或欄位無法比較者標示 `NA`。
 
+## 2026-05-18 更新：機構區域與大小補充資料
+
+新增來源檔案：
+
+- `Revision\20260516\機構區域與大小.xlsx`
+
+已補出的對應表格：
+
+- `RESULTS\tables\facility_region_size_overview_20260516.xlsx`
+- `RESULTS\tables\excluded_residents_by_facility_size_20260516.xlsx`
+- `RESULTS\tables\excluded_residents_by_region_20260516.xlsx`
+
+已補出的對應圖檔：
+
+- `RESULTS\figures\training_facility_region_size_20260516.png`
+- `RESULTS\figures\excluded_facility_region_size_20260516.png`
+
+同一批表圖也已複製到：
+
+- `Revision\01_需蔡老師補做資料表\facility_region_size_overview_20260516.xlsx`
+- `Revision\01_需蔡老師補做資料表\excluded_residents_by_facility_size_20260516.xlsx`
+- `Revision\01_需蔡老師補做資料表\excluded_residents_by_region_20260516.xlsx`
+- `Revision\01_需蔡老師補做資料表\training_facility_region_size_20260516.png`
+- `Revision\01_需蔡老師補做資料表\excluded_facility_region_size_20260516.png`
+
+目前可補強的內容：
+
+- Training/development facility roster 共 493 家機構：小型 311 家（63.1%）、中型 148 家（30.0%）、大型 34 家（6.9%）。
+- Training/development facility roster 的區域：南部 332 家（67.3%）、中部 100 家（20.3%）、北部 54 家（11.0%）、東部 7 家（1.4%）。
+- Excluded residents with insufficient follow-up 共 19,756 人，區域分布：北部 2,112（10.7%）、中部 4,019（20.3%）、南部 13,447（68.1%）、東部 174（0.9%）、離島 4（0.0%）。
+- Excluded residents 依機構大小合併後：小型 9,218（46.7%）、中型 8,211（41.6%）、大型 2,233（11.3%）、Unknown 94（0.5%）。比舊版 merge 少了許多 unknown，表示新檔案改善了 excluded 端的機構大小 linkage。
+- Excluded-resident facility roster 共 586 家有機構大小：小型 363 家（61.9%）、中型 182 家（31.1%）、大型 41 家（7.0%）。
+
+仍需限制說明：
+
+- `機構區域與大小.xlsx` 的 training/development 部分是機構層級 roster，不是 resident-level included cohort distribution。因此目前可以說明 development/training facilities 的區域與大小組成，但不能把 23,901 或 30,117 位 included residents 精準分配到機構大小/區域。
+- Excluded residents 的區域分布是 workbook 已彙整的人數，可直接使用；excluded residents 的機構大小可用 `dbname` 合併到 resident-level excluded data，但仍有 94 人（0.5%）無法取得機構大小。
+- 因 included cohort 仍缺 resident-level stable facility linkage，正式 included vs excluded resident-level facility-size/region statistical comparison 仍不能完整執行；回覆時應描述為 facility-level characterization plus excluded-resident stratification。
+
+可放入 Response Letter 的補充句：
+
+Using the newly provided facility-region and facility-size workbook, we further characterized the facility composition of the development facility roster and the excluded residents. The development facility roster included 493 facilities, most of which were small facilities and located in southern Taiwan. Among residents excluded because of insufficient follow-up, 68.1% were from southern Taiwan, and resident-level linkage to facility size showed that 46.7% were from small facilities, 41.6% from medium facilities, and 11.3% from large facilities, with facility size unavailable for 0.5%. Because the newly provided development-cohort file is a facility-level roster rather than a resident-level analytic dataset, we interpreted these results as facility-level characterization and excluded-resident stratification rather than a complete resident-level included-versus-excluded facility comparison.
+
 重要提醒：
 
 - `RESULTS` 的主要模型結果原先於 2026-05-08 從原 notebook 的 Google Sheets 重新跑出；2026-05-13 已再用 `DATA` 內新補資料更新排除個案、機構規模/區域、external calibration CI 等補充表。部分 external validation 數值與投稿版摘要不同；若採用重跑結果，Abstract、Results、Table 4 要同步更新。

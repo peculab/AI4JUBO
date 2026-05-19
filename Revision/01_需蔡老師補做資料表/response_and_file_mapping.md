@@ -33,12 +33,22 @@
 - `table4_external_validation_paper_friendly.xlsx`
 - `table5_subgroup_performance_with_ci.xlsx`
 - `calibration_metrics_external_hybridxgbrf_with_ci.xlsx`
+- `facility_region_size_overview_20260516.xlsx`
+- `excluded_residents_by_facility_size_20260516.xlsx`
+- `excluded_residents_by_region_20260516.xlsx`
+
+也已放入可直接交付的機構區域/大小圖檔：
+
+- `training_facility_region_size_20260516.png`
+- `excluded_facility_region_size_20260516.png`
 
 新版與投稿版數據不同的原因已整理在：
 
 - `C:\AI4JUBO\Revision\20260516\data_discrepancy_and_table_notes.md`
 
 最重要的判讀：新版 included/excluded comparison 的 included 端是 development + external validation 合併後 `N = 30,117`，而投稿版 Development Cohort appendix 是 development cohort only `N = 23,901`；此外新版 binary/categorical 百分比使用非缺失分母，因此 tube feeding、respiratory support 等百分比會和投稿版不同。
+
+2026-05-18 晚間補入 `Revision\20260516\機構區域與大小.xlsx` 後，已進一步補上機構區域/大小總覽。此檔可支持 training/development facilities 的機構層級區域/大小描述，以及 excluded residents 的區域與機構大小分層；但它不是 resident-level included cohort linkage，因此仍不能做完整 resident-level included vs excluded facility-size/region statistical comparison。
 
 重要版本提醒：
 

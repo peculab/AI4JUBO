@@ -1,0 +1,20 @@
+﻿Source,Scope,Dimension,Stratum,Count type,Count,Denominator,Percent,Notes
+facility_region_size_20260516.xlsx,Training/development facility roster,Facility size,小,Facilities,311,493,63.1,Facility-level roster; not resident-level included cohort distribution.
+facility_region_size_20260516.xlsx,Training/development facility roster,Facility size,中,Facilities,148,493,30.0,Facility-level roster; not resident-level included cohort distribution.
+facility_region_size_20260516.xlsx,Training/development facility roster,Facility size,大,Facilities,34,493,6.9,Facility-level roster; not resident-level included cohort distribution.
+facility_region_size_20260516.xlsx,Training/development facility roster,Region,南部,Facilities,332,493,67.3,Facility-level roster; not resident-level included cohort distribution.
+facility_region_size_20260516.xlsx,Training/development facility roster,Region,中部,Facilities,100,493,20.3,Facility-level roster; not resident-level included cohort distribution.
+facility_region_size_20260516.xlsx,Training/development facility roster,Region,北部,Facilities,54,493,11.0,Facility-level roster; not resident-level included cohort distribution.
+facility_region_size_20260516.xlsx,Training/development facility roster,Region,東部,Facilities,7,493,1.4,Facility-level roster; not resident-level included cohort distribution.
+facility_region_size_20260516.xlsx,Excluded residents with insufficient follow-up,Region,北部,Residents,2112,19756,10.7,Aggregate resident counts supplied in workbook.
+facility_region_size_20260516.xlsx,Excluded residents with insufficient follow-up,Region,中部,Residents,4019,19756,20.3,Aggregate resident counts supplied in workbook.
+facility_region_size_20260516.xlsx,Excluded residents with insufficient follow-up,Region,南部,Residents,13447,19756,68.1,Aggregate resident counts supplied in workbook.
+facility_region_size_20260516.xlsx,Excluded residents with insufficient follow-up,Region,東部,Residents,174,19756,0.9,Aggregate resident counts supplied in workbook.
+facility_region_size_20260516.xlsx,Excluded residents with insufficient follow-up,Region,離島,Residents,4,19756,0.0,Aggregate resident counts supplied in workbook.
+facility_region_size_20260516.xlsx,Excluded-resident facility roster,Facility size,小,Facilities,363,586,61.9,Facility-level roster for facilities appearing among excluded residents.
+facility_region_size_20260516.xlsx,Excluded-resident facility roster,Facility size,中,Facilities,182,586,31.1,Facility-level roster for facilities appearing among excluded residents.
+facility_region_size_20260516.xlsx,Excluded-resident facility roster,Facility size,大,Facilities,41,586,7.0,Facility-level roster for facilities appearing among excluded residents.
+facility_region_size_20260516.xlsx + DATA excluded residents,Excluded residents with insufficient follow-up,Facility size,小,Residents,9218,19756,46.7,Resident-level merge by dbname; Unknown means facility size not available after merge.
+facility_region_size_20260516.xlsx + DATA excluded residents,Excluded residents with insufficient follow-up,Facility size,中,Residents,8211,19756,41.6,Resident-level merge by dbname; Unknown means facility size not available after merge.
+facility_region_size_20260516.xlsx + DATA excluded residents,Excluded residents with insufficient follow-up,Facility size,大,Residents,2233,19756,11.3,Resident-level merge by dbname; Unknown means facility size not available after merge.
+facility_region_size_20260516.xlsx + DATA excluded residents,Excluded residents with insufficient follow-up,Facility size,Unknown,Residents,94,19756,0.5,Resident-level merge by dbname; Unknown means facility size not available after merge.
