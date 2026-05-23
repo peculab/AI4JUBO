@@ -1,7 +1,7 @@
 ﻿# `01_請蔡老師協助的部分.docx` 對應回覆、圖表與檔名
 
 更新日期：2026-05-18 晚間重跑後  
-工作區：`C:\AI4JUBO`
+工作區：`../..`
 
 本文依 `01_請蔡老師協助的部分.docx` 的順序整理可直接回覆 reviewer 的內容與對應檔案。所有模型 performance、calibration、SHAP、survival、threshold、DCA、missingness 相關數字已改以 2026-05-18 晚間重跑後的 `RESULTS` 為準。
 

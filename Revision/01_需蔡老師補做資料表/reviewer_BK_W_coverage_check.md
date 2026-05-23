@@ -1,7 +1,7 @@
 ﻿# Reviewer BK / Reviewer W point-to-point coverage check
 
 更新日期：2026-05-18 晚間重跑後  
-工作區：`C:\AI4JUBO`
+工作區：`../..`
 
 ## 一、目前判定
 

@@ -2,20 +2,20 @@
 
 Source document: `01_請蔡老師協助的部分2.docx`  
 New data source: `analysis_data_filtering_out_included_ADL_missing_0523.csv`  
-Comparison source for existing manuscript numbers: `C:\AI4JUBO\FINAL`  
+Comparison source for existing manuscript numbers: `../../FINAL`  
 Excluded residents in 0523 file: `19,756`
 
 ## 數字一致性總原則
 
 中文說明：
-本檔案用來整理 reviewer response 可以引用的文字、圖表與表格。為避免修稿時前後數字不一致，原本已存在於 `C:\AI4JUBO\FINAL` 投稿稿件與 Figure 1-7 的主要模型數字，原則上維持 FINAL 版本；本次 20260523 新增的分析只作為補充資料或 reviewer response 的新增敏感度/輔助分析，不直接取代原稿既有 performance 數字，除非後續決定正式重跑並同步更新 manuscript、tables、figures、abstract、results 與 response letter。
+本檔案用來整理 reviewer response 可以引用的文字、圖表與表格。為避免修稿時前後數字不一致，原本已存在於 `../../FINAL` 投稿稿件與 Figure 1-7 的主要模型數字，原則上維持 FINAL 版本；本次 20260523 新增的分析只作為補充資料或 reviewer response 的新增敏感度/輔助分析，不直接取代原稿既有 performance 數字，除非後續決定正式重跑並同步更新 manuscript、tables、figures、abstract、results 與 response letter。
 
 English note:
 Existing manuscript performance numbers should remain aligned with the submitted FINAL version unless the manuscript is comprehensively updated. Newly generated 20260523 analyses should be labeled as additional or supplementary analyses.
 
 ## 與 FINAL 原稿數字核對
 
-以下數字來自 `C:\AI4JUBO\FINAL\Machine_Learning_Model_for_Predicting_6-Month_Mortality_in_LTC_Facilities.docx`，應作為原本既有結果的基準。
+以下數字來自 `../../FINAL/Machine_Learning_Model_for_Predicting_6-Month_Mortality_in_LTC_Facilities.docx`，應作為原本既有結果的基準。
 
 | 項目 | FINAL 原稿既有數字 | 本次處理原則 |
 | --- | --- | --- |

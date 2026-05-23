@@ -1,0 +1,31 @@
+﻿Feature
+死亡標記
+性別_is_male
+預估年齡
+DNR_flag
+ADL_總分_max
+ADL_first_score
+ADL_last_score
+ADL_diff_seq
+ADL_std
+ADL_Max
+ADL_Min
+ADL_明顯惡化
+ADL_first_CouldNot
+ADL_last_CouldNot
+六個月內住院次數
+first_has_denture
+last_has_denture
+diff_has_denture
+first_ 意識總分
+last_ 意識總分
+意識總分Max
+意識總分_diff
+使用呼吸輔具
+first_has_feeding_tube
+last_has_feeding_tube
+diff_has_feeding_tube
+had_fall
+BW_first
+BW_last
+BW_diff_seq

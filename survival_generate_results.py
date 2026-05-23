@@ -10,8 +10,8 @@ administrative horizon. Residents without death before 180 days are censored
 at min(observation days, 180).
 
 Outputs are written under:
-    C:/AI4JUBO/RESULTS/tables
-    C:/AI4JUBO/RESULTS/figures
+    ./RESULTS/tables
+    ./RESULTS/figures
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ except Exception as exc:  # pragma: no cover
     raise SystemExit("statsmodels PHReg is required for this script.") from exc
 
 
-WORKDIR = Path(r"C:\AI4JUBO")
+WORKDIR = Path(__file__).resolve().parent
 RESULTS = WORKDIR / "RESULTS"
 TABLES = RESULTS / "tables"
 FIGURES = RESULTS / "figures"

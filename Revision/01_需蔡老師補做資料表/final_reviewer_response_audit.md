@@ -1,7 +1,7 @@
 ﻿# Final reviewer response audit
 
 更新日期：2026-05-18 晚間重跑後  
-工作區：`C:\AI4JUBO`
+工作區：`../..`
 
 本文是最後一次總核對紀錄，用於確認 reviewer response、程式碼、重跑結果、圖表與交付資料夾是否一致。
 

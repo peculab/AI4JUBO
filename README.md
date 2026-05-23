@@ -66,7 +66,7 @@ The scripts also support local CSV/XLSX files if the data are exported locally.
 
 ## Reproducing Revision Outputs
 
-Run from `C:\AI4JUBO`.
+Run from the repository root (`.`).
 
 Generate main revision results:
 

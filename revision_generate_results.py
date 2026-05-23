@@ -1,7 +1,7 @@
 """
 Generate revision tables and figures for the JUBO 6-month mortality paper.
 
-Outputs are written to C:/AI4JUBO/RESULTS by default.
+Outputs are written to ./RESULTS by default.
 
 Examples
 --------
@@ -68,7 +68,7 @@ except Exception as exc:  # pragma: no cover
     raise SystemExit("Missing dependency: plotly. Install it before running this script.") from exc
 
 
-WORKDIR = Path(r"C:\AI4JUBO")
+WORKDIR = Path(__file__).resolve().parent
 DEFAULT_RESULTS_DIR = WORKDIR / "RESULTS"
 
 TRAINING_SHEET_URL = "https://docs.google.com/spreadsheets/d/1qljyp9lq3QsZ7O2O7FQxm7taEWQi3F3bZgNMcQ7NJeE/edit?usp=sharing"

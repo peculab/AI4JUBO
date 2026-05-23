@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-ROOT = Path(r"C:\AI4JUBO")
+ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "Revision" / "20260523"
 SEARCH_ROOTS = [
     ROOT / "Revision" / "20260523",

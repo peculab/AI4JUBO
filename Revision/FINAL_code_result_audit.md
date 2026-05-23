@@ -1,13 +1,13 @@
 # FINAL 投稿版數據與程式碼對照審查
 
 日期：2026-05-08  
-工作區：`C:\AI4JUBO`
+工作區：`..`
 
 ## 結論
 
 目前與 `FINAL` 投稿版主要數據最一致的程式來源是：
 
-`C:\AI4JUBO\jubodeath_v9_puredata_paper.ipynb`
+`../jubodeath_v9_puredata_paper.ipynb`
 
 其他 `JuboDeath_V2` 到 `JuboDeath_V9_*` 多數是歷史版本或局部分析；只有 `jubodeath_v9_puredata_paper.ipynb` 同時包含投稿版的 cohort size、主要模型表、外部驗證 bootstrap CI、次族群分析、ROC/calibration/SHAP 圖表流程。
 
@@ -220,4 +220,3 @@ Reviewer BK 要求 Cox、random survival forest、gradient boosting survival 或
 6. 補 included vs excluded，尤其 insufficient follow-up 那組。
 7. 補 missingness indicator / imputation sensitivity / facility-level missingness。
 8. 視資料可得性決定 survival analysis；若不能做，要在 response letter 和 limitations 說清楚。
-

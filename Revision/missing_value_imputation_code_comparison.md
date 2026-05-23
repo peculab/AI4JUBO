@@ -1,6 +1,6 @@
 ﻿# 缺失值補值方法與程式碼比對說明
 
-本文整理最終投稿與 reviewer response 可使用的 missing data / imputation 說明，並對照目前 `C:\AI4JUBO` 的更新後程式碼。此次已將程式碼調整為與原始投稿文字一致：二元/計數型欄位缺失補 `0`；連續/量表欄位先用 development cohort 的 mean 與 SD 做 z-score normalization，缺失的 standardized value 補 `0`，等同於在原始尺度補 development-cohort mean。
+本文整理最終投稿與 reviewer response 可使用的 missing data / imputation 說明，並對照目前 `..` 的更新後程式碼。此次已將程式碼調整為與原始投稿文字一致：二元/計數型欄位缺失補 `0`；連續/量表欄位先用 development cohort 的 mean 與 SD 做 z-score normalization，缺失的 standardized value 補 `0`，等同於在原始尺度補 development-cohort mean。
 
 ## 投稿可用描述
 
