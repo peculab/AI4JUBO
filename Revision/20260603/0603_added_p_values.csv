@@ -1,0 +1,3 @@
+﻿Item,Chi-square df,P value,Table-ready P value,Observed counts
+Institutional regions,3,7.08022750441636E-08,<0.001,"Development: North 2245; Central 4754; South 16603; East 299 | Excluded: North 2112; Central 4019; South 13447; East 174"
+Institution scale,2,0.926066271181866,0.926,"Development: Small 311; Medium 148; Large 34 | Excluded: Small 363; Medium 182; Large 41"
