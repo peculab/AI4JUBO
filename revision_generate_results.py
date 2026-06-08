@@ -26,6 +26,7 @@ import argparse
 import json
 import math
 import re
+import shutil
 import sys
 import warnings
 from pathlib import Path
@@ -70,6 +71,16 @@ except Exception as exc:  # pragma: no cover
 
 WORKDIR = Path(__file__).resolve().parent
 DEFAULT_RESULTS_DIR = WORKDIR / "RESULTS"
+DEFAULT_REVISION_OUTPUT_DIR = WORKDIR / "Revision" / "20260608"
+
+REVISION_FIGURE_ALIASES = {
+    "decision_curve_external_validation": "0608_decision_curve_external_validation_focus.png",
+    "decision_curve_internal_cv": "0608_decision_curve_internal_cv_focus.png",
+    "external_validation_calibration_with_histogram": "0608_external_validation_calibration_with_histogram_count_ticks_from_0605.png",
+    "internal_cv_calibration_with_histogram": "0608_internal_cv_calibration_with_histogram_count_ticks_from_0605.png",
+    "external_validation_confusion_matrices": "0608_external_validation_confusion_matrices_with_accuracy_from_0605.png",
+    "internal_cv_confusion_matrices": "0608_internal_cv_confusion_matrices_with_accuracy_from_0605.png",
+}
 
 TRAINING_SHEET_URL = "https://docs.google.com/spreadsheets/d/1qljyp9lq3QsZ7O2O7FQxm7taEWQi3F3bZgNMcQ7NJeE/edit?usp=sharing"
 EXTERNAL_SHEET_URL = "https://docs.google.com/spreadsheets/d/1NFAhP8NUVsxzEq55siFA0yHvnXY5GWqiKGSOKC4y1Qg/edit?usp=sharing"
@@ -129,6 +140,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--external", type=str, default=None, help="Path to external_validation_1014 csv/xlsx.")
     parser.add_argument("--use-google-sheets", action="store_true", help="Read the original Google Sheets.")
     parser.add_argument("--results-dir", type=str, default=str(DEFAULT_RESULTS_DIR), help="Output directory.")
+    parser.add_argument(
+        "--revision-output-dir",
+        type=str,
+        default=str(DEFAULT_REVISION_OUTPUT_DIR),
+        help="Directory where finalized revision figures are copied.",
+    )
     parser.add_argument("--n-boot", type=int, default=2000, help="Bootstrap replicates for final outputs.")
     parser.add_argument("--n-boot-fast", type=int, default=500, help="Bootstrap replicates for subgroup/calibration.")
     parser.add_argument("--random-state", type=int, default=42)
@@ -420,11 +437,25 @@ def save_df(df: pd.DataFrame, path_base: Path) -> None:
 
 
 def save_plot(fig: go.Figure, path_base: Path) -> None:
-    fig.write_html(str(path_base.with_suffix(".html")))
-    try:
-        fig.write_image(str(path_base.with_suffix(".png")), scale=3)
-    except Exception:
-        pass
+    html_path = path_base.with_suffix(".html")
+    png_path = path_base.with_suffix(".png")
+    fig.write_html(str(html_path))
+    fig.write_image(str(png_path), scale=3)
+    if not png_path.exists() or png_path.stat().st_size == 0:
+        raise RuntimeError(f"Plot PNG was not created: {png_path}")
+
+
+def publish_revision_figures(results_dir: Path, revision_output_dir: Path) -> dict[str, str]:
+    revision_output_dir.mkdir(parents=True, exist_ok=True)
+    published = {}
+    for source_stem, revision_name in REVISION_FIGURE_ALIASES.items():
+        source_path = results_dir / "figures" / f"{source_stem}.png"
+        if not source_path.exists() or source_path.stat().st_size == 0:
+            raise FileNotFoundError(f"Expected generated figure is missing: {source_path}")
+        target_path = revision_output_dir / revision_name
+        shutil.copy2(source_path, target_path)
+        published[source_stem] = str(target_path)
+    return {"revision_figures_dir": str(revision_output_dir), "revision_figures": published}
 
 
 def internal_cv(
@@ -560,15 +591,27 @@ def decision_curve_df(y_true: np.ndarray, prob_dict: dict[str, np.ndarray], thre
 
 def plot_decision_curve(dca: pd.DataFrame, title: str) -> go.Figure:
     fig = go.Figure()
+    line_styles = {
+        # Keep the same visual mapping as the original Plotly output; axis ranges are focused below.
+        "Treat None": dict(color="#636EFA", dash="dash"),
+        "Treat All": dict(color="#EF553B", dash="dot"),
+        "HybridXGBRF (Our Approach)": dict(color="#00CC96", dash="solid"),
+        "LogisticRegression (max_iter=200)": dict(color="#AB63FA", dash="solid"),
+        "XGBClassifier": dict(color="#FFA15A", dash="solid"),
+        "RandomForestClassifier": dict(color="#19D3F3", dash="solid"),
+        "LogisticRegression (max_iter=1000)": dict(color="#FF6692", dash="solid"),
+        "Ridge": dict(color="#B6E880", dash="solid"),
+        "Lasso": dict(color="#FF97FF", dash="solid"),
+        "Elastic": dict(color="#FECB52", dash="solid"),
+    }
     for model, sub in dca.groupby("Model", sort=False):
-        dash = "dash" if model == "Treat None" else "dot" if model == "Treat All" else "solid"
         fig.add_trace(
             go.Scatter(
                 x=sub["Threshold"],
                 y=sub["Net Benefit"],
                 mode="lines",
                 name=model,
-                line=dict(dash=dash),
+                line=line_styles.get(model, dict(dash="solid")),
             )
         )
     fig.update_layout(
@@ -579,6 +622,8 @@ def plot_decision_curve(dca: pd.DataFrame, title: str) -> go.Figure:
         width=900,
         height=600,
     )
+    fig.update_xaxes(range=[0, 1.0], dtick=0.1)
+    fig.update_yaxes(range=[-0.05, 0.30], tick0=-0.05, dtick=0.05)
     return fig
 
 
@@ -665,6 +710,27 @@ def risk_decile_table(y_true: np.ndarray, y_proba: np.ndarray) -> pd.DataFrame:
 
 
 def plot_calibration_with_histogram(y_true: np.ndarray, prob_dict: dict[str, np.ndarray], title: str) -> go.Figure:
+    display_names = {
+        "HybridXGBRF (Our Approach)": "HybridXGBRF",
+        "XGBClassifier": "XGB",
+        "RandomForestClassifier": "RF",
+        "LogisticRegression (max_iter=1000)": "LR-1000",
+        "Ridge": "Ridge",
+        "Elastic": "Elastic",
+        "Lasso": "Lasso",
+        "LogisticRegression (max_iter=200)": "LR-200",
+    }
+    line_styles = {
+        "Perfect": dict(color="#0057b8", dash="dash"),
+        "HybridXGBRF (Our Approach)": dict(color="#b60d2e"),
+        "XGBClassifier": dict(color="#00b050"),
+        "RandomForestClassifier": dict(color="#7030a0"),
+        "LogisticRegression (max_iter=1000)": dict(color="#ed7d31"),
+        "Ridge": dict(color="#00a6c8"),
+        "Elastic": dict(color="#c00050"),
+        "Lasso": dict(color="#7ac943"),
+        "LogisticRegression (max_iter=200)": dict(color="#ff4fc3"),
+    }
     fig = make_subplots(
         rows=2,
         cols=1,
@@ -672,39 +738,71 @@ def plot_calibration_with_histogram(y_true: np.ndarray, prob_dict: dict[str, np.
         row_heights=[0.7, 0.3],
         vertical_spacing=0.05,
     )
-    fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode="lines", name="Perfect", line=dict(dash="dash")), row=1, col=1)
-    for model_name, probs in prob_dict.items():
+    fig.add_trace(
+        go.Scatter(x=[0, 1], y=[0, 1], mode="lines", name="Perfect", line=line_styles["Perfect"]),
+        row=1,
+        col=1,
+    )
+    for model_name in [m for m in MODEL_ORDER if m in prob_dict]:
+        probs = prob_dict[model_name]
         frac_pos, mean_pred = calibration_curve(y_true, probs, n_bins=10, strategy="quantile")
-        fig.add_trace(go.Scatter(x=mean_pred, y=frac_pos, mode="lines+markers", name=model_name), row=1, col=1)
+        fig.add_trace(
+            go.Scatter(
+                x=mean_pred,
+                y=frac_pos,
+                mode="lines+markers",
+                name=display_names.get(model_name, model_name),
+                line=line_styles.get(model_name),
+                marker=dict(size=7),
+            ),
+            row=1,
+            col=1,
+        )
     main_model = "HybridXGBRF (Our Approach)"
     if main_model in prob_dict:
-        hist_counts, _ = np.histogram(prob_dict[main_model], bins=30, range=(0, 1))
+        hist_bins = 20
+        hist_counts, _ = np.histogram(prob_dict[main_model], bins=hist_bins, range=(0, 1))
         max_count = int(hist_counts.max()) if len(hist_counts) else 0
         count_dtick = nice_count_dtick(max_count)
+        if count_dtick:
+            # Keep count tick labels readable while leaving headroom above the tallest bar.
+            top_tick = int(math.floor(max_count / count_dtick) * count_dtick)
+            hist_y_range = [0, max_count * 1.08]
+            hist_tickvals = list(range(0, top_tick + 1, count_dtick))
+        else:
+            hist_y_range = None
+            hist_tickvals = None
         fig.add_trace(
             go.Histogram(
                 x=prob_dict[main_model],
-                xbins=dict(start=0, end=1, size=1 / 30),
+                xbins=dict(start=0, end=1, size=1 / hist_bins),
                 name="Predicted probability distribution",
+                marker=dict(color="#ffc845", line=dict(color="#ffc845")),
             ),
             row=2,
             col=1,
         )
     else:
         count_dtick = None
-    fig.update_layout(title=title, template="plotly_white", width=900, height=750, bargap=0.05)
-    fig.update_yaxes(title_text="Observed event rate", row=1, col=1)
-    fig.update_yaxes(
+        hist_y_range = None
+        hist_tickvals = None
+    fig.update_layout(title=title, template="plotly", width=900, height=750, bargap=0.05)
+    fig.update_yaxes(title_text="Fraction of positives", row=1, col=1)
+    hist_axis = dict(
         title_text="Count",
         row=2,
         col=1,
         showticklabels=True,
         ticks="outside",
         tickformat=",d",
-        dtick=count_dtick,
         automargin=True,
     )
-    fig.update_xaxes(title_text="Predicted probability", row=2, col=1)
+    if hist_tickvals is not None:
+        hist_axis.update(tickmode="array", tickvals=hist_tickvals, range=hist_y_range)
+    else:
+        hist_axis.update(dtick=count_dtick)
+    fig.update_yaxes(**hist_axis)
+    fig.update_xaxes(title_text="Mean predicted probability", row=2, col=1)
     return fig
 
 
@@ -1128,18 +1226,34 @@ def plot_confusion_matrices(prob_dict: dict[str, np.ndarray], y_true: np.ndarray
         fig.add_trace(
             go.Heatmap(
                 z=pct,
+                zmin=0,
+                zmax=100,
                 text=text,
                 texttemplate="%{text}",
                 x=["Predicted 1", "Predicted 0"],
                 y=["Actual 1", "Actual 0"],
-                coloraxis="coloraxis",
+                colorscale=[
+                    [0.00, "#f7fbff"],
+                    [0.25, "#deebf7"],
+                    [0.50, "#9ecae1"],
+                    [0.75, "#3182bd"],
+                    [1.00, "#08519c"],
+                ],
+                showscale=(i == 0),
+                colorbar=dict(
+                    title="Row %",
+                    tickmode="array",
+                    tickvals=[0, 20, 40, 60, 80, 100],
+                    ticktext=["0", "20", "40", "60", "80", "100"],
+                    len=0.85,
+                    thickness=18,
+                ),
             ),
             row=row,
             col=col,
         )
     fig.update_layout(
         title=title,
-        coloraxis=dict(colorscale="Blues", cmin=0, cmax=100),
         template="plotly_white",
         width=950,
         height=max(500, 370 * n_rows),
@@ -1368,6 +1482,7 @@ def main() -> int:
         Path(args.supplement_data_dir),
         included_df=pd.concat([train_df, external_df], ignore_index=True),
     )
+    revision_manifest = publish_revision_figures(results_dir, Path(args.revision_output_dir))
 
     manifest = {
         "results_dir": str(results_dir),
@@ -1378,12 +1493,14 @@ def main() -> int:
         "tables_dir": str(results_dir / "tables"),
         "figures_dir": str(results_dir / "figures"),
         **supplemental_manifest,
+        **revision_manifest,
     }
     write_manifest(results_dir, manifest)
 
     print(f"\nDone. Results written to: {results_dir}")
     print("Tables: ", results_dir / "tables")
     print("Figures:", results_dir / "figures")
+    print("Revision figures:", Path(args.revision_output_dir))
     return 0
 
 

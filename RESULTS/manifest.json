@@ -1,12 +1,21 @@
 {
-  "results_dir": ".",
+  "results_dir": "C:\\GitHub\\AI4JUBO\\RESULTS",
   "training_n": 23901,
   "external_n": 6216,
   "features_n": 29,
   "main_model_label": "HybridXGBRF (Our Approach)",
-  "tables_dir": "./tables",
-  "figures_dir": "./figures",
-  "supplemental_data_dir": "../DATA",
+  "tables_dir": "C:\\GitHub\\AI4JUBO\\RESULTS\\tables",
+  "figures_dir": "C:\\GitHub\\AI4JUBO\\RESULTS\\figures",
+  "supplemental_data_dir": "C:\\GitHub\\AI4JUBO\\DATA",
   "excluded_residents_n": 19756,
-  "excluded_adl_missing_n": 6715
+  "excluded_adl_missing_n": 6715,
+  "revision_figures_dir": "Revision\\20260608",
+  "revision_figures": {
+    "decision_curve_external_validation": "Revision\\20260608\\0608_decision_curve_external_validation_focus.png",
+    "decision_curve_internal_cv": "Revision\\20260608\\0608_decision_curve_internal_cv_focus.png",
+    "external_validation_calibration_with_histogram": "Revision\\20260608\\0608_external_validation_calibration_with_histogram_count_ticks_from_0605.png",
+    "internal_cv_calibration_with_histogram": "Revision\\20260608\\0608_internal_cv_calibration_with_histogram_count_ticks_from_0605.png",
+    "external_validation_confusion_matrices": "Revision\\20260608\\0608_external_validation_confusion_matrices_with_accuracy_from_0605.png",
+    "internal_cv_confusion_matrices": "Revision\\20260608\\0608_internal_cv_confusion_matrices_with_accuracy_from_0605.png"
+  }
 }
