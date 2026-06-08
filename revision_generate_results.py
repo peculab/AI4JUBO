@@ -678,16 +678,46 @@ def plot_calibration_with_histogram(y_true: np.ndarray, prob_dict: dict[str, np.
         fig.add_trace(go.Scatter(x=mean_pred, y=frac_pos, mode="lines+markers", name=model_name), row=1, col=1)
     main_model = "HybridXGBRF (Our Approach)"
     if main_model in prob_dict:
+        hist_counts, _ = np.histogram(prob_dict[main_model], bins=30, range=(0, 1))
+        max_count = int(hist_counts.max()) if len(hist_counts) else 0
+        count_dtick = nice_count_dtick(max_count)
         fig.add_trace(
-            go.Histogram(x=prob_dict[main_model], nbinsx=30, name="Predicted probability distribution"),
+            go.Histogram(
+                x=prob_dict[main_model],
+                xbins=dict(start=0, end=1, size=1 / 30),
+                name="Predicted probability distribution",
+            ),
             row=2,
             col=1,
         )
+    else:
+        count_dtick = None
     fig.update_layout(title=title, template="plotly_white", width=900, height=750, bargap=0.05)
     fig.update_yaxes(title_text="Observed event rate", row=1, col=1)
-    fig.update_yaxes(title_text="Count", row=2, col=1)
+    fig.update_yaxes(
+        title_text="Count",
+        row=2,
+        col=1,
+        showticklabels=True,
+        ticks="outside",
+        tickformat=",d",
+        dtick=count_dtick,
+        automargin=True,
+    )
     fig.update_xaxes(title_text="Predicted probability", row=2, col=1)
     return fig
+
+
+def nice_count_dtick(max_count: int) -> int | None:
+    if max_count <= 0:
+        return None
+    raw_step = max_count / 4
+    magnitude = 10 ** math.floor(math.log10(raw_step))
+    for multiplier in (1, 2, 5, 10):
+        step = int(multiplier * magnitude)
+        if raw_step <= step:
+            return step
+    return int(10 * magnitude)
 
 
 def paired_bootstrap_auc(
@@ -1075,7 +1105,18 @@ def plot_confusion_matrices(prob_dict: dict[str, np.ndarray], y_true: np.ndarray
     available = [m for m in MODEL_ORDER if m in prob_dict]
     n_cols = 2
     n_rows = math.ceil(len(available) / n_cols)
-    fig = make_subplots(rows=n_rows, cols=n_cols, subplot_titles=available)
+    subplot_titles = []
+    for model_name in available:
+        pred = (prob_dict[model_name] >= 0.5).astype(int)
+        acc = accuracy_score(y_true, pred)
+        subplot_titles.append(f"{model_name}<br>Accuracy = {acc * 100:.1f}%")
+    fig = make_subplots(
+        rows=n_rows,
+        cols=n_cols,
+        subplot_titles=subplot_titles,
+        horizontal_spacing=0.12,
+        vertical_spacing=0.12,
+    )
     for i, model_name in enumerate(available):
         row = i // n_cols + 1
         col = i % n_cols + 1
@@ -1101,7 +1142,7 @@ def plot_confusion_matrices(prob_dict: dict[str, np.ndarray], y_true: np.ndarray
         coloraxis=dict(colorscale="Blues", cmin=0, cmax=100),
         template="plotly_white",
         width=950,
-        height=max(450, 330 * n_rows),
+        height=max(500, 370 * n_rows),
     )
     return fig
 
