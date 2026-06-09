@@ -1,0 +1,8 @@
+﻿Metric,Value
+Development rows,23901.0
+Rows with modal H01_NUM-to-dbname mapping,22811.0
+Rows with mapped dbname and facility size/region,22797.0
+Mapped resident coverage,0.9543952135893896
+Mapped roster coverage,0.9538094640391616
+Weighted median mode share,0.0196078431372549
+Weighted median candidate dbname count,58.0
