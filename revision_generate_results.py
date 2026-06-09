@@ -1393,6 +1393,26 @@ def main() -> int:
         save_df(dca_internal, results_dir / "tables" / "decision_curve_internal_cv")
         save_plot(plot_decision_curve(dca_internal, "Decision Curve Analysis: Internal CV"), results_dir / "figures" / "decision_curve_internal_cv")
 
+        main_model = "HybridXGBRF (Our Approach)"
+        if main_model in oof_probs_all:
+            save_df(
+                risk_decile_table(oof_true, oof_probs_all[main_model]),
+                results_dir / "tables" / "risk_decile_calibration_internal_hybridxgbrf",
+            )
+            save_df(
+                pd.DataFrame([calibration_metrics(oof_true, oof_probs_all[main_model])]),
+                results_dir / "tables" / "calibration_metrics_internal_hybridxgbrf",
+            )
+            save_df(
+                calibration_metrics_with_ci(
+                    oof_true,
+                    oof_probs_all[main_model],
+                    n_boot=args.n_boot_fast,
+                    random_state=args.random_state,
+                ),
+                results_dir / "tables" / "calibration_metrics_internal_hybridxgbrf_with_ci",
+            )
+
     ext_summary, ext_pretty, ext_probs, fitted_models = external_validation(
         models, X, y, ex_X, ex_y, n_boot=args.n_boot, random_state=args.random_state
     )
