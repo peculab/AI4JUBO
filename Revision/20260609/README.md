@@ -1,97 +1,129 @@
-# 0609 請蔡老師協助部分：結果檔案對應
+# 0609 請蔡老師協助部分：結果檔案對應與機構數修正
 
 來源 PDF：`0609_請蔡老師協助的部分.pdf`
 
-本資料夾已依 PDF 逐項整理結果。若要快速檢查全部需求，優先開啟：
+本資料夾已依 0609 PDF 需求重新整理。請優先開啟：
 
 `0609_development_facility_missingness_form.xlsx`
 
-## 1. Internal calibration metrics with 95% CI
+## 最重要結論
 
-PDF 需求：
+原先看到的三個機構相關數字不可混用：
 
-`calibration_metrics_internal_hybridxgbrf_with_ci`
+- `493`：目前可由原始 `training_data_1014` Google Sheet 與 `DATA/area_size.xlsx` 共同確認的 Development cohort LTCF / `dbname` 數。
+- `2,057`：Development cohort 中的 unique `H01_NUM` groups，不是 LTCF 家數。
+- `122`：舊版 exploratory modal `H01_NUM -> dbname` mapping 後得到的 mapped dbname 數，已不作為正式結果。
 
-請看：
+因此，正式 facility-level 分析均改用 confirmed resident-level `dbname`。
 
-- `calibration_metrics_internal_hybridxgbrf_with_ci.xlsx`
-- `0609_development_facility_missingness_form.xlsx`，sheet `Internal calibration CI`
+## 為什麼本地 cache 的 dbname 是空的
 
-## 2. Internal risk-decile calibration
+`Revision/20260523/training_data_1014_cached_for_completion.csv` 中 `dbname` 全部缺失，是因為原始 notebook/script 對整份 Google Sheet 做了 numeric coercion：
 
-PDF 需求：
+`pd.to_numeric(..., errors="coerce")`
 
-`risk_decile_calibration_internal_hybridxgbrf`
+文字型機構代碼，例如 `C001`，因此被轉成 `NaN`。
 
-請看：
+但是原始 `training_data_1014` Google Sheet 仍保留 confirmed resident-level `dbname`。經驗證，原始 Google Sheet 經 numeric-clean 後與本地 cache row-by-row 一致，所以可以安全地用原始 sheet 的 `dbname` 接回本地分析資料。
 
-- `risk_decile_calibration_internal_hybridxgbrf.xlsx`
-- `0609_development_facility_missingness_form.xlsx`，sheet `Internal risk decile`
+目前可驗證的 Development cohort 數字：
 
-## 3. Development cohort facility size / institutional region missingness table
+- Residents：23,901
+- Deaths：5,272
+- Confirmed unique `dbname`：493
+- Unique `H01_NUM`：2,057，僅作診斷用，不是機構數
+- `DATA/area_size.xlsx` facility roster：493 家
 
-PDF 需求欄位：
+## 正式使用的檔案
 
-- Variable
-- N facilities
-- N residents
-- ALL Feature Missing Percent (Overall missing percent)
-- ALL Feature Missing Percent / Dead cohort
-- ALL Feature Missing Percent / Alive cohort
-- Death rate
+### 1. Facility size / institutional region missingness table
 
-正式保守版請看：
+正式表：
 
 - `0609_development_facility_missingness_form.xlsx`，sheet `Requested form`
 - `0609_development_facility_missingness_form.csv`
 
-因 Development cohort cache 內 `dbname` 全部缺失，resident-level facility size / region 欄位無法由目前專案檔案可靠估計。`Requested form` 中只填入可由 `DATA/area_size.xlsx` 可靠取得的 `N facilities`，其餘 resident-level 欄位標示為不可估計。
+此表已使用原始 Google Sheet 的 confirmed `dbname`，並 merge 至 `DATA/area_size.xlsx`。因此現在可以正式呈現：
 
-若要看使用目前本地資料嘗試對應 `dbname` 後的完整探索性數字，請看：
+- N facilities
+- N residents
+- ALL Feature Missing Percent overall
+- ALL Feature Missing Percent among dead residents
+- ALL Feature Missing Percent among alive residents
+- Death rate
 
-- `0609_development_facility_missingness_form.xlsx`，sheet `Exploratory mapped form`
-- `0609_exploratory_mapped_facility_missingness_form.csv`
+分層合計檢查：
 
-探索性 mapping 的覆蓋率與限制請看：
+- Facility size strata：493 facilities，23,901 residents
+- Institutional region strata：493 facilities，23,901 residents
 
-- `0609_development_facility_missingness_form.xlsx`，sheet `Exploratory mapping audit`
-- `0609_development_facility_missingness_form.xlsx`，sheet `H01 linkage method`
+### 2. Chi-square test by confirmed institution ID
 
-注意：探索性表使用其他本地資料建立 `H01_NUM -> dbname` 眾數對照後再接 `DATA/area_size.xlsx`。雖可對到大部分 rows，但許多 `H01_NUM` 有多個候選 `dbname`，因此不應視為 confirmed resident-level facility linkage。
+正式 facility-level chi-square：
 
-## 4. Chi-square test: institution ID x overall missing percent
+- `0609_development_facility_missingness_form.xlsx`，sheet `Chi-square dbname`
+- `0609_dbname_missingness_chi_square.csv`
 
-PDF 需求：
+檢定為：
 
-卡方檢定：機構 ID x Overall missing percent (ALL features 平均缺失率)
+`dbname x all-feature missing/observed cells`
 
-請看：
+結果：
 
-- `0609_development_facility_missingness_form.xlsx`，sheet `Chi-square`
+- N `dbname` groups：493
+- Total feature cells：693,129
+- Missing feature cells：54,243
+- Observed feature cells：638,886
+- Chi-square statistic：140,785.975
+- df：492
+- P value：<0.001
+- Cramer's V：0.451
+
+### 3. dbname-level missingness detail
+
+- `0609_dbname_missingness_detail.csv`
+- `0609_development_facility_missingness_form.xlsx`，sheet `dbname missingness detail`
+
+此檔列出每個 confirmed `dbname` 的 residents/rows、missing feature cells、observed feature cells，以及 overall missing percent。
+
+## 診斷用或已停用的檔案
+
+### H01_NUM diagnostic only
+
 - `0609_h01num_missingness_chi_square.csv`
+- `0609_development_facility_missingness_form.xlsx`，sheet `H01 diagnostic`
 
-目前因 Development cohort cache 缺少可用 `dbname`，此檢定以 `H01_NUM` 作為唯一可用的 repeated identifier，檢定 `H01_NUM x all-feature missing/observed cells`。此結果應視為 exploratory，除非確認 `H01_NUM` 即為本研究要使用的機構 ID。
+`H01_NUM` 有 2,057 groups，因此不可解讀為 LTCF 家數。此檔僅保留作為 documentation/resident identifier 診斷，不作為正式 facility-level chi-square。
 
-## 5. ALL Feature 清單
+### 舊 exploratory mapping 已停用
 
-PDF 問題：
+- `0609_exploratory_mapped_facility_missingness_form.csv`
+- `0609_exploratory_mapping_audit.csv`
 
-「ALL Feature 是不是下面這些？」
+這兩個檔案已改為 `Deprecated` 說明。因為 confirmed `dbname` 已可由原始 Google Sheet 取得，不再需要使用 modal `H01_NUM -> dbname` exploratory mapping。
 
-請看：
+## 其他 0609 輸出
+
+### Internal calibration metrics with 95% CI
+
+- `calibration_metrics_internal_hybridxgbrf_with_ci.xlsx`
+- `calibration_metrics_internal_hybridxgbrf_with_ci.csv`
+- `0609_development_facility_missingness_form.xlsx`，sheet `Internal calibration CI`
+
+### Internal risk-decile calibration
+
+- `risk_decile_calibration_internal_hybridxgbrf.xlsx`
+- `risk_decile_calibration_internal_hybridxgbrf.csv`
+- `0609_development_facility_missingness_form.xlsx`，sheet `Internal risk decile`
+
+### ALL Feature 清單
 
 - `0609_development_facility_missingness_form.xlsx`，sheet `Feature list`
-- 來源：`..\..\RESULTS\tables\shap_feature_importance.xlsx`
+- 來源：`../../RESULTS/tables/shap_feature_importance.xlsx`
 
-結論：是。ALL Feature 使用 PDF 第 2-3 頁列出的 29 個模型 predictor features，與 `shap_feature_importance.xlsx` 一致。`selected_features.xlsx` 中的 `死亡標記` 是 outcome，不納入 all-feature missingness 的 predictor feature 計算。
+ALL Feature 使用 29 個模型 predictor features。`死亡標記` 是 outcome，不納入 all-feature missingness 的 predictor feature 計算。
 
-## 6. missingness_indicator_key_features_regression 補意識總分Max_missing 與 P value
-
-PDF 需求：
-
-`missingness_indicator_key_features_regression` 增加 `意識總分Max_missing`，並呈現 P 值。
-
-請看：
+### Missingness indicator regression with P values
 
 - `0609_missingness_indicator_key_features_regression_with_p.xlsx`
 - `0609_missingness_indicator_key_features_regression_with_p.csv`
@@ -103,10 +135,27 @@ PDF 需求：
 - Source variable：`意識總分Max`
 - P value / formatted P value
 
-## 7. 可重跑程式
-
-本次 0609 產出程式：
+## 可重跑程式
 
 - `generate_0609_facility_missingness_form.py`
 
-此程式會重建主 workbook、探索性 mapping 表、chi-square 表，以及補 P 值的 missingness indicator regression 表。
+此程式會重新讀取原始 Google Sheet 的 confirmed `dbname`，重建：
+
+- 主 workbook
+- confirmed dbname facility-level table
+- dbname chi-square table
+- dbname-level missingness detail
+- H01_NUM diagnostic table
+- missingness indicator regression with P values
+
+## 建議 manuscript / reviewer response 口徑
+
+若沒有其他舊版原始資料能支持 497 家，建議主文與回覆統一改為：
+
+> After excluding individuals who did not meet the inclusion criteria, 23,901 residents from 493 LTCFs were included in the model development cohort.
+
+若希望保留較保守但不精確的敘述，也可寫：
+
+> ... from approximately 500 LTCFs ...
+
+但不建議再使用 497，因為目前專案內可由 raw sheet 與 facility roster 共同驗證的數字是 493。

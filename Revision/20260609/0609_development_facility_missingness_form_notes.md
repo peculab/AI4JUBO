@@ -4,13 +4,24 @@
 
 The PDF requested a Development cohort table stratified by facility size and institutional region, including N facilities, N residents, all-feature missing percent overall, all-feature missing percent among dead residents, all-feature missing percent among alive residents, and death rate. It also requested a chi-square test for institution ID by overall all-feature missing percent.
 
+## Key Correction
+
+The local Development cohort cache (`Revision/20260523/training_data_1014_cached_for_completion.csv`) has `dbname` missing for all 23,901 rows because the original notebook/script applied numeric coercion to the full Google Sheet. The original `training_data_1014` Google Sheet retains confirmed resident-level `dbname`. After numeric cleaning, the raw Google Sheet matches the local cache row-for-row, so the confirmed `dbname` can be safely reattached by row order.
+
+Confirmed Development cohort counts from the raw sheet:
+
+- Development residents: 23,901
+- Development deaths: 5,272
+- Confirmed unique `dbname`: 493
+- Unique `H01_NUM`: 2,057 (`H01_NUM` is not the LTCF count)
+- Facility roster rows in `DATA/area_size.xlsx`: 493
+
 ## Files Produced
 
 - `0609_development_facility_missingness_form.xlsx`
 - `0609_development_facility_missingness_form.csv`
-- `0609_exploratory_mapped_facility_missingness_form.csv`
-- `0609_exploratory_mapping_audit.csv`
-- `0609_h01num_missingness_chi_square.csv`
+- `0609_dbname_missingness_chi_square.csv`
+- `0609_h01num_missingness_chi_square.csv` (diagnostic only)
 - `0609_missingness_indicator_key_features_regression_with_p.xlsx`
 - `0609_missingness_indicator_key_features_regression_with_p.csv`
 
@@ -18,19 +29,18 @@ The PDF requested a Development cohort table stratified by facility size and ins
 
 The all-feature missingness calculation uses the 29 model predictor features listed in `RESULTS/tables/shap_feature_importance.xlsx`, matching the feature list shown in the 0609 PDF. `死亡標記` from `selected_features.xlsx` is the outcome and is not counted as a predictor feature.
 
-## Data Limitation
+## Facility-Level Table
 
-The current project files do not contain a usable resident-level `dbname` / facility linkage for the Development cohort model cache (`Revision/20260523/training_data_1014_cached_for_completion.csv`). In that file, `dbname` is empty for all 23,901 rows. Therefore, resident counts, dead/alive all-feature missingness, and death rates by facility size or institutional region cannot be estimated reliably from the saved Development cohort cache.
+`0609_development_facility_missingness_form.csv` is now the confirmed facility-level table. It uses raw resident-level `dbname` merged to `DATA/area_size.xlsx`, so N residents, dead/alive all-feature missingness, and death rate are estimable by facility size and institutional region.
 
-The `N facilities` column in the requested form was filled from `DATA/area_size.xlsx`, sheet `訓練資料_機構大小`. Other resident-level columns are marked as not estimable in the workbook.
+## Chi-Square Test
 
-## Exploratory Mapping Attempt
+`0609_dbname_missingness_chi_square.csv` is the confirmed facility-level chi-square test: `dbname x all-feature missing/observed cells`. The older `H01_NUM` result is retained only as a diagnostic because `H01_NUM` has 2,057 groups and should not be interpreted as the number of LTCFs.
 
-An additional sheet, `Exploratory mapped form`, uses a modal H01_NUM-to-dbname map derived from local excluded/supplemental files and then merges to `DATA/area_size.xlsx`. This provides a complete numeric table, but it is exploratory. The `Exploratory mapping audit` sheet reports coverage and ambiguity. In the current data, many H01_NUM values have many candidate dbname values, so this should not replace confirmed resident-level facility linkage.
-
-## Chi-square Test
-
-Because `dbname` is absent in the Development cohort cache, the chi-square sheet uses `H01_NUM` as the only available repeated identifier in the analytic cache. This should be treated as exploratory unless `H01_NUM` is confirmed to be the intended institution ID.
+dbname chi-square statistic: 140785.975224
+dbname chi-square df: 492
+dbname chi-square p value: <0.001
+dbname chi-square Cramer's V: 0.450685
 
 Number of prediction features counted: 29
 Development cohort rows: 23901

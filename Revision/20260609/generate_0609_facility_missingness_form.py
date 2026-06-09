@@ -17,24 +17,38 @@ FACILITY_ROSTER = ROOT / "DATA" / "area_size.xlsx"
 SHAP_FEATURES = ROOT / "RESULTS" / "tables" / "shap_feature_importance.xlsx"
 INTERNAL_CALIBRATION = OUT / "calibration_metrics_internal_hybridxgbrf_with_ci.csv"
 INTERNAL_RISK_DECILE = OUT / "risk_decile_calibration_internal_hybridxgbrf.csv"
-LINKAGE_SOURCES = [
-    ROOT / "DATA" / "analysis_data_filtering_out_0514.csv",
-    ROOT / "DATA" / "analysis_data_filtering_out_included_ADL_missing_0514.csv",
-    ROOT / "Revision" / "20260523" / "analysis_data_filtering_out_included_ADL_missing_0523.csv",
-]
+
+TRAINING_SHEET_URL = (
+    "https://docs.google.com/spreadsheets/d/"
+    "1qljyp9lq3QsZ7O2O7FQxm7taEWQi3F3bZgNMcQ7NJeE/export?format=xlsx"
+)
+EXTERNAL_SHEET_URL = (
+    "https://docs.google.com/spreadsheets/d/"
+    "1NFAhP8NUVsxzEq55siFA0yHvnXY5GWqiKGSOKC4y1Qg/export?format=xlsx"
+)
 
 OUTCOME_COL = "死亡標記"
-IDENTIFIER_COLS = {"H01_NUM", "dbname", "入家日期", "結案日期", OUTCOME_COL, "觀察天數"}
+FACILITY_COL = "dbname"
 
 
-def fmt_pct(value: float | None) -> str:
-    if value is None or pd.isna(value):
-        return "NA"
-    return f"{value * 100:.1f}%"
+def numeric_clean(df: pd.DataFrame) -> pd.DataFrame:
+    return df.apply(lambda col: pd.to_numeric(col.astype(str).str.replace(",", "").str.strip(), errors="coerce"))
 
 
-def load_development_cohort() -> pd.DataFrame:
+def load_development_cohort_raw() -> pd.DataFrame:
+    return pd.read_excel(TRAINING_SHEET_URL, sheet_name=0)
+
+
+def load_external_cohort_raw() -> pd.DataFrame:
+    return pd.read_excel(EXTERNAL_SHEET_URL, sheet_name=0)
+
+
+def load_development_cache() -> pd.DataFrame:
     return pd.read_csv(TRAINING_CACHE)
+
+
+def load_external_cache() -> pd.DataFrame:
+    return pd.read_csv(EXTERNAL_CACHE)
 
 
 def load_facility_roster() -> pd.DataFrame:
@@ -54,179 +68,114 @@ def feature_columns(df: pd.DataFrame, model_features: pd.DataFrame) -> list[str]
     features = model_features["Feature"].tolist()
     missing = [c for c in features if c not in df.columns]
     if missing:
-        raise ValueError(f"Model features missing from Development cohort cache: {missing}")
+        raise ValueError(f"Model features missing from Development cohort source: {missing}")
     return features
 
 
-def requested_form_from_available_sources(roster: pd.DataFrame) -> pd.DataFrame:
-    rows: list[dict[str, object]] = []
-    not_estimable = "Not estimable from current project files"
-
-    size_rows = [
-        ("facility_size <50", roster["核定床數"] < 50),
-        ("facility_size 50-150", roster["核定床數"].between(50, 150, inclusive="both")),
-        ("facility_size >150", roster["核定床數"] > 150),
-    ]
-    region_rows = [
-        ("Institutional regions_North", roster["區域"] == "北部"),
-        ("Institutional regions_Central", roster["區域"] == "中部"),
-        ("Institutional regions_South", roster["區域"] == "南部"),
-        ("Institutional regions_East", roster["區域"] == "東部"),
-    ]
-
-    for variable, mask in [*size_rows, *region_rows]:
-        sub = roster.loc[mask]
-        rows.append(
-            {
-                "Variable": variable,
-                "N facilities": int(sub["dbname"].nunique()),
-                "N residents": not_estimable,
-                "ALL Feature Missing Percent (Overall missing percent)": not_estimable,
-                "ALL Feature Missing Percent/ Dead cohort": not_estimable,
-                "ALL Feature Missing Percent/ Alive cohort": not_estimable,
-                "Death rate": not_estimable,
-                "Status/Notes": (
-                    "N facilities is from DATA/area_size.xlsx facility roster. "
-                    "Resident-level Development cohort dbname/facility linkage is absent in "
-                    "Revision/20260523/training_data_1014_cached_for_completion.csv, so resident counts, "
-                    "dead/alive all-feature missingness, and death rate are not estimable from current project files."
-                ),
-            }
-        )
-    return pd.DataFrame(rows)
+def validate_raw_matches_cache(raw: pd.DataFrame, cache: pd.DataFrame) -> tuple[bool, list[tuple[str, int]]]:
+    common = [c for c in cache.columns if c in raw.columns]
+    raw_num = numeric_clean(raw[common])
+    mismatches: list[tuple[str, int]] = []
+    for col in common:
+        a = raw_num[col].reset_index(drop=True)
+        b = pd.to_numeric(cache[col], errors="coerce").reset_index(drop=True)
+        same = (a.isna() & b.isna()) | np.isclose(a.fillna(0), b.fillna(0), rtol=0, atol=1e-8)
+        if not bool(same.all()):
+            mismatches.append((col, int((~same).sum())))
+    return len(mismatches) == 0, mismatches
 
 
-def build_h01_dbname_mode_map() -> tuple[pd.DataFrame, pd.DataFrame]:
-    frames = []
-    for path in LINKAGE_SOURCES:
-        if path.exists():
-            tmp = pd.read_csv(path, usecols=["H01_NUM", "dbname"])
-            tmp["Linkage source"] = str(path.relative_to(ROOT))
-            frames.append(tmp)
-    linkage = pd.concat(frames, ignore_index=True).dropna(subset=["H01_NUM", "dbname"])
-    counts = linkage.groupby(["H01_NUM", "dbname"]).size().reset_index(name="Pair count")
-    total = counts.groupby("H01_NUM")["Pair count"].sum().rename("Total linkage rows")
-    n_db = counts.groupby("H01_NUM")["dbname"].nunique().rename("Candidate dbname count")
-    mode = counts.sort_values(["H01_NUM", "Pair count", "dbname"], ascending=[True, False, True]).drop_duplicates("H01_NUM")
-    mode = mode.merge(total, on="H01_NUM", how="left").merge(n_db, on="H01_NUM", how="left")
-    mode["Mode share"] = mode["Pair count"] / mode["Total linkage rows"]
-    mode = mode.rename(columns={"dbname": "Mapped dbname"})
-
-    diagnostic = pd.DataFrame(
-        [
-            {
-                "Linkage method": "H01_NUM to dbname by modal value from excluded/supplemental local files",
-                "N H01_NUM with any candidate dbname": int(mode["H01_NUM"].nunique()),
-                "Median candidate dbname count per H01_NUM": float(mode["Candidate dbname count"].median()),
-                "Median mode share": float(mode["Mode share"].median()),
-                "Important limitation": (
-                    "Many H01_NUM values map to many dbname candidates in the available local files. "
-                    "This mapping is exploratory and should not be treated as confirmed resident-level facility linkage."
-                ),
-            }
-        ]
-    )
-    return mode, diagnostic
+def add_roster(raw: pd.DataFrame, roster: pd.DataFrame) -> pd.DataFrame:
+    roster2 = roster.drop_duplicates(FACILITY_COL).copy()
+    return raw.merge(roster2, on=FACILITY_COL, how="left")
 
 
-def exploratory_mapped_form(
-    df: pd.DataFrame,
-    roster: pd.DataFrame,
-    features: list[str],
-    h01_map: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    work = df.copy()
-    work = work.merge(
-        h01_map[["H01_NUM", "Mapped dbname", "Candidate dbname count", "Mode share"]],
-        on="H01_NUM",
-        how="left",
-    )
-    roster2 = roster.rename(columns={"dbname": "Mapped dbname"}).copy()
-    work = work.merge(roster2[["Mapped dbname", "核定床數", "機構大小層級", "區域"]], on="Mapped dbname", how="left")
-    y = pd.to_numeric(work[OUTCOME_COL], errors="coerce").astype(int)
+def summarize_facility_strata(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
+    y_all = pd.to_numeric(df[OUTCOME_COL], errors="coerce").astype(int)
 
     def summarize(label: str, mask: pd.Series) -> dict[str, object]:
-        sub = work.loc[mask].copy()
-        if sub.empty:
-            return {
-                "Variable": label,
-                "N facilities": 0,
-                "N residents": 0,
-                "ALL Feature Missing Percent (Overall missing percent)": np.nan,
-                "ALL Feature Missing Percent/ Dead cohort": np.nan,
-                "ALL Feature Missing Percent/ Alive cohort": np.nan,
-                "Death rate": np.nan,
-                "Mapped resident coverage note": "No mapped residents in this stratum.",
-            }
-        y_sub = pd.to_numeric(sub[OUTCOME_COL], errors="coerce").astype(int)
+        sub = df.loc[mask].copy()
+        y = y_all.loc[sub.index]
+        missing = sub[features].isna()
 
         def miss(mask2: pd.Series | np.ndarray | None = None) -> float:
-            ss = sub.loc[mask2, features] if mask2 is not None else sub[features]
-            return float(ss.isna().mean().mean()) if len(ss) else np.nan
+            ss = missing.loc[mask2] if mask2 is not None else missing
+            return float(ss.mean().mean()) if len(ss) else np.nan
 
         return {
             "Variable": label,
-            "N facilities": int(sub["Mapped dbname"].nunique(dropna=True)),
+            "N facilities": int(sub[FACILITY_COL].nunique(dropna=True)),
             "N residents": int(len(sub)),
             "ALL Feature Missing Percent (Overall missing percent)": miss(),
-            "ALL Feature Missing Percent/ Dead cohort": miss(y_sub == 1),
-            "ALL Feature Missing Percent/ Alive cohort": miss(y_sub == 0),
-            "Death rate": float(y_sub.mean()),
-            "Mapped resident coverage note": (
-                "Exploratory values based on modal H01_NUM-to-dbname mapping; "
-                f"median mode share in this stratum={sub['Mode share'].median():.3f}; "
-                f"median candidate dbname count={sub['Candidate dbname count'].median():.1f}."
+            "ALL Feature Missing Percent/ Dead cohort": miss(y == 1),
+            "ALL Feature Missing Percent/ Alive cohort": miss(y == 0),
+            "Death rate": float(y.mean()) if len(y) else np.nan,
+            "Status/Notes": (
+                "Computed from confirmed resident-level dbname in the original training_data_1014 Google Sheet, "
+                "merged to DATA/area_size.xlsx facility roster."
             ),
         }
 
     rows = [
-        summarize("facility_size <50", work["核定床數"] < 50),
-        summarize("facility_size 50-150", work["核定床數"].between(50, 150, inclusive="both")),
-        summarize("facility_size >150", work["核定床數"] > 150),
-        summarize("Institutional regions_North", work["區域"] == "北部"),
-        summarize("Institutional regions_Central", work["區域"] == "中部"),
-        summarize("Institutional regions_South", work["區域"] == "南部"),
-        summarize("Institutional regions_East", work["區域"] == "東部"),
+        summarize("facility_size <50", df["核定床數"] < 50),
+        summarize("facility_size 50-150", df["核定床數"].between(50, 150, inclusive="both")),
+        summarize("facility_size >150", df["核定床數"] > 150),
+        summarize("Institutional regions_North", df["區域"] == "北部"),
+        summarize("Institutional regions_Central", df["區域"] == "中部"),
+        summarize("Institutional regions_South", df["區域"] == "南部"),
+        summarize("Institutional regions_East", df["區域"] == "東部"),
     ]
-    form = pd.DataFrame(rows)
-    diagnostics = pd.DataFrame(
+    return pd.DataFrame(rows)
+
+
+def dbname_missingness_chi_square(df: pd.DataFrame, features: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
+    missing = df[features].isna()
+    detail = (
+        pd.DataFrame(
+            {
+                FACILITY_COL: df[FACILITY_COL],
+                "Missing feature cells": missing.sum(axis=1),
+                "Observed feature cells": len(features) - missing.sum(axis=1),
+            }
+        )
+        .groupby(FACILITY_COL, dropna=False)
+        .sum()
+        .reset_index()
+    )
+    detail["Total feature cells"] = detail["Missing feature cells"] + detail["Observed feature cells"]
+    detail["Overall missing percent"] = detail["Missing feature cells"] / detail["Total feature cells"]
+    detail["N residents/rows"] = df.groupby(FACILITY_COL, dropna=False).size().to_numpy()
+
+    contingency = detail[["Missing feature cells", "Observed feature cells"]].to_numpy()
+    chi2, p_value, dof, _ = chi2_contingency(contingency)
+    total = contingency.sum()
+    cramers_v = float(np.sqrt(chi2 / (total * (min(contingency.shape) - 1))))
+    chi_square = pd.DataFrame(
         [
             {
-                "Metric": "Development rows",
-                "Value": len(work),
-            },
-            {
-                "Metric": "Rows with modal H01_NUM-to-dbname mapping",
-                "Value": int(work["Mapped dbname"].notna().sum()),
-            },
-            {
-                "Metric": "Rows with mapped dbname and facility size/region",
-                "Value": int(work["機構大小層級"].notna().sum()),
-            },
-            {
-                "Metric": "Mapped resident coverage",
-                "Value": float(work["Mapped dbname"].notna().mean()),
-            },
-            {
-                "Metric": "Mapped roster coverage",
-                "Value": float(work["機構大小層級"].notna().mean()),
-            },
-            {
-                "Metric": "Weighted median mode share",
-                "Value": float(work.loc[work["Mapped dbname"].notna(), "Mode share"].median()),
-            },
-            {
-                "Metric": "Weighted median candidate dbname count",
-                "Value": float(work.loc[work["Mapped dbname"].notna(), "Candidate dbname count"].median()),
-            },
+                "Test": "dbname x all-feature missing/observed cells",
+                "Chi-square statistic": chi2,
+                "df": dof,
+                "P value": p_value,
+                "Table-ready P value": "<0.001" if p_value < 0.001 else f"{p_value:.3f}",
+                "Cramer's V": cramers_v,
+                "N dbname groups": int(detail[FACILITY_COL].nunique(dropna=False)),
+                "Total feature cells": int(total),
+                "Missing feature cells": int(contingency[:, 0].sum()),
+                "Observed feature cells": int(contingency[:, 1].sum()),
+                "Important note": (
+                    "Computed using confirmed resident-level dbname from the original training_data_1014 Google Sheet. "
+                    "The local numeric cache has dbname missing because text identifiers were coerced to NaN."
+                ),
+            }
         ]
     )
-    return form, diagnostics
+    return detail, chi_square
 
 
-def h01_missingness_chi_square(df: pd.DataFrame, features: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
+def h01_diagnostic(df: pd.DataFrame, features: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
     missing = df[features].isna()
-    by_h01 = (
+    detail = (
         pd.DataFrame(
             {
                 "H01_NUM": df["H01_NUM"],
@@ -238,16 +187,15 @@ def h01_missingness_chi_square(df: pd.DataFrame, features: list[str]) -> tuple[p
         .sum()
         .reset_index()
     )
-    by_h01["Total feature cells"] = by_h01["Missing feature cells"] + by_h01["Observed feature cells"]
-    by_h01["Overall missing percent"] = by_h01["Missing feature cells"] / by_h01["Total feature cells"]
-    by_h01["N residents/rows"] = df.groupby("H01_NUM", dropna=False).size().to_numpy()
+    detail["Total feature cells"] = detail["Missing feature cells"] + detail["Observed feature cells"]
+    detail["Overall missing percent"] = detail["Missing feature cells"] / detail["Total feature cells"]
+    detail["N residents/rows"] = df.groupby("H01_NUM", dropna=False).size().to_numpy()
 
-    contingency = by_h01[["Missing feature cells", "Observed feature cells"]].to_numpy()
-    chi2, p_value, dof, expected = chi2_contingency(contingency)
+    contingency = detail[["Missing feature cells", "Observed feature cells"]].to_numpy()
+    chi2, p_value, dof, _ = chi2_contingency(contingency)
     total = contingency.sum()
     cramers_v = float(np.sqrt(chi2 / (total * (min(contingency.shape) - 1))))
-
-    chi_square = pd.DataFrame(
+    summary = pd.DataFrame(
         [
             {
                 "Test": "H01_NUM x all-feature missing/observed cells",
@@ -256,19 +204,18 @@ def h01_missingness_chi_square(df: pd.DataFrame, features: list[str]) -> tuple[p
                 "P value": p_value,
                 "Table-ready P value": "<0.001" if p_value < 0.001 else f"{p_value:.3f}",
                 "Cramer's V": cramers_v,
-                "N H01_NUM groups": int(by_h01["H01_NUM"].nunique(dropna=False)),
+                "N H01_NUM groups": int(detail["H01_NUM"].nunique(dropna=False)),
                 "Total feature cells": int(total),
                 "Missing feature cells": int(contingency[:, 0].sum()),
                 "Observed feature cells": int(contingency[:, 1].sum()),
                 "Important limitation": (
-                    "This is computed using H01_NUM because the analytic Development cohort cache has empty dbname. "
-                    "It should be treated as an exploratory facility/documentation-identifier test unless H01_NUM is confirmed "
-                    "to be the intended institution ID."
+                    "Diagnostic only. H01_NUM has 2,057 groups in the Development cohort and is not the LTCF count; "
+                    "confirmed facility-level analyses should use dbname."
                 ),
             }
         ]
     )
-    return by_h01, chi_square
+    return detail, summary
 
 
 def overall_development_missingness(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
@@ -289,7 +236,9 @@ def overall_development_missingness(df: pd.DataFrame, features: list[str]) -> pd
                 "ALL Feature Missing Percent/ Dead cohort": feature_missing_percent(y == 1),
                 "ALL Feature Missing Percent/ Alive cohort": feature_missing_percent(y == 0),
                 "Death rate": float(y.mean()),
-                "Notes": "Overall Development cohort values across the 29 SHAP/model features listed in the Feature list sheet; not stratified by facility because dbname is unavailable in the analytic cache.",
+                "Notes": (
+                    "Overall Development cohort values across the 29 SHAP/model features listed in the Feature list sheet."
+                ),
             }
         ]
     )
@@ -392,117 +341,52 @@ def missingness_indicator_key_features_regression(train_df: pd.DataFrame, extern
     return out
 
 
-def data_availability_audit(df: pd.DataFrame, roster: pd.DataFrame, features: list[str]) -> pd.DataFrame:
-    dbname_usable = df["dbname"].notna() & ~df["dbname"].astype(str).str.strip().isin(["", "nan", "None"])
+def data_availability_audit(
+    raw: pd.DataFrame,
+    cache: pd.DataFrame,
+    external_raw: pd.DataFrame,
+    external_cache: pd.DataFrame,
+    roster: pd.DataFrame,
+    features: list[str],
+    cache_match: bool,
+    cache_mismatches: list[tuple[str, int]],
+) -> pd.DataFrame:
     return pd.DataFrame(
         [
-            {
-                "Item": "Development cohort source",
-                "Finding": str(TRAINING_CACHE.relative_to(ROOT)),
-            },
-            {
-                "Item": "Development cohort rows",
-                "Finding": len(df),
-            },
-            {
-                "Item": "Development cohort deaths",
-                "Finding": int(pd.to_numeric(df[OUTCOME_COL], errors="coerce").sum()),
-            },
-            {
-                "Item": "All prediction features counted",
-                "Finding": len(features),
-            },
-            {
-                "Item": "dbname missing rows in Development cache",
-                "Finding": int(df["dbname"].isna().sum()),
-            },
-            {
-                "Item": "Usable dbname rows in Development cache",
-                "Finding": int(dbname_usable.sum()),
-            },
-            {
-                "Item": "Unique H01_NUM groups in Development cache",
-                "Finding": int(df["H01_NUM"].nunique(dropna=False)),
-            },
-            {
-                "Item": "Facility roster source",
-                "Finding": str(FACILITY_ROSTER.relative_to(ROOT)),
-            },
-            {
-                "Item": "Facility roster rows",
-                "Finding": len(roster),
-            },
+            {"Item": "Development raw source", "Finding": TRAINING_SHEET_URL},
+            {"Item": "Development raw rows", "Finding": len(raw)},
+            {"Item": "Development raw usable dbname rows", "Finding": int(raw[FACILITY_COL].notna().sum())},
+            {"Item": "Development raw unique dbname", "Finding": int(raw[FACILITY_COL].nunique(dropna=True))},
+            {"Item": "Development raw unique H01_NUM", "Finding": int(raw["H01_NUM"].nunique(dropna=False))},
+            {"Item": "Development cache source", "Finding": str(TRAINING_CACHE.relative_to(ROOT))},
+            {"Item": "Development cache usable dbname rows", "Finding": int(cache[FACILITY_COL].notna().sum())},
+            {"Item": "Raw numeric-clean result matches cache", "Finding": cache_match},
+            {"Item": "Raw/cache mismatched columns", "Finding": cache_mismatches if cache_mismatches else "None"},
+            {"Item": "External raw rows", "Finding": len(external_raw)},
+            {"Item": "External raw usable dbname rows", "Finding": int(external_raw[FACILITY_COL].notna().sum())},
+            {"Item": "External raw unique dbname", "Finding": int(external_raw[FACILITY_COL].nunique(dropna=True))},
+            {"Item": "External raw unique H01_NUM", "Finding": int(external_raw["H01_NUM"].nunique(dropna=False))},
+            {"Item": "External cache usable dbname rows", "Finding": int(external_cache[FACILITY_COL].notna().sum())},
+            {"Item": "Facility roster source", "Finding": str(FACILITY_ROSTER.relative_to(ROOT))},
+            {"Item": "Facility roster rows", "Finding": len(roster)},
+            {"Item": "Facility roster unique dbname", "Finding": int(roster[FACILITY_COL].nunique(dropna=True))},
+            {"Item": "All prediction features counted", "Finding": len(features)},
             {
                 "Item": "Conclusion",
                 "Finding": (
-                    "The requested resident-level facility size/region table cannot be fully populated from current project files "
-                    "because the Development cohort cache lacks usable dbname/facility linkage."
+                    "Confirmed dbname is present in the original raw Google Sheets. The local numeric cache lost dbname "
+                    "because text identifiers were coerced to NaN. Facility-level analyses in this workbook use the raw "
+                    "confirmed dbname and match the cache row order after numeric cleaning."
                 ),
             },
         ]
     )
 
 
-def main() -> None:
-    OUT.mkdir(parents=True, exist_ok=True)
-    dev = load_development_cohort()
-    external = pd.read_csv(EXTERNAL_CACHE)
-    roster = load_facility_roster()
-    model_features = load_model_feature_list()
-    features = feature_columns(dev, model_features)
-
-    requested = requested_form_from_available_sources(roster)
-    overall_missingness = overall_development_missingness(dev, features)
-    h01_missingness, chi_square = h01_missingness_chi_square(dev, features)
-    key_missingness_regression = missingness_indicator_key_features_regression(dev, external)
-    audit = data_availability_audit(dev, roster, features)
-    internal_calibration = pd.read_csv(INTERNAL_CALIBRATION)
-    internal_risk_decile = pd.read_csv(INTERNAL_RISK_DECILE)
-    h01_map, h01_linkage_diagnostic = build_h01_dbname_mode_map()
-    exploratory_form, exploratory_diagnostics = exploratory_mapped_form(dev, roster, features, h01_map)
-
-    output_xlsx = OUT / "0609_development_facility_missingness_form.xlsx"
-    with pd.ExcelWriter(output_xlsx) as writer:
-        internal_calibration.to_excel(writer, index=False, sheet_name="Internal calibration CI")
-        internal_risk_decile.to_excel(writer, index=False, sheet_name="Internal risk decile")
-        requested.to_excel(writer, index=False, sheet_name="Requested form")
-        exploratory_form.to_excel(writer, index=False, sheet_name="Exploratory mapped form")
-        exploratory_diagnostics.to_excel(writer, index=False, sheet_name="Exploratory mapping audit")
-        overall_missingness.to_excel(writer, index=False, sheet_name="Overall dev missingness")
-        model_features.to_excel(writer, index=False, sheet_name="Feature list")
-        chi_square.to_excel(writer, index=False, sheet_name="Chi-square")
-        key_missingness_regression.to_excel(writer, index=False, sheet_name="Key missingness regression")
-        h01_linkage_diagnostic.to_excel(writer, index=False, sheet_name="H01 linkage method")
-        h01_map.sort_values(["Candidate dbname count", "Mode share"], ascending=[False, True]).to_excel(
-            writer, index=False, sheet_name="H01 dbname mode map"
-        )
-        h01_missingness.sort_values("Overall missing percent", ascending=False).to_excel(
-            writer, index=False, sheet_name="H01 missingness detail"
-        )
-        audit.to_excel(writer, index=False, sheet_name="Data availability audit")
-
-    requested.to_csv(OUT / "0609_development_facility_missingness_form.csv", index=False, encoding="utf-8-sig")
-    exploratory_form.to_csv(
-        OUT / "0609_exploratory_mapped_facility_missingness_form.csv",
-        index=False,
-        encoding="utf-8-sig",
-    )
-    exploratory_diagnostics.to_csv(
-        OUT / "0609_exploratory_mapping_audit.csv",
-        index=False,
-        encoding="utf-8-sig",
-    )
-    chi_square.to_csv(OUT / "0609_h01num_missingness_chi_square.csv", index=False, encoding="utf-8-sig")
-    key_missingness_regression.to_csv(
-        OUT / "0609_missingness_indicator_key_features_regression_with_p.csv",
-        index=False,
-        encoding="utf-8-sig",
-    )
-    with pd.ExcelWriter(OUT / "0609_missingness_indicator_key_features_regression_with_p.xlsx") as writer:
-        key_missingness_regression.to_excel(writer, index=False, sheet_name="Logistic regression")
-
-    summary = OUT / "0609_development_facility_missingness_form_notes.md"
-    summary.write_text(
+def write_notes(dev: pd.DataFrame, features: list[str], chi_square: pd.DataFrame) -> None:
+    note = OUT / "0609_development_facility_missingness_form_notes.md"
+    cramers_v = chi_square.loc[0, "Cramer's V"]
+    note.write_text(
         "\n".join(
             [
                 "# 0609 Development Facility Missingness Form Notes",
@@ -511,13 +395,24 @@ def main() -> None:
                 "",
                 "The PDF requested a Development cohort table stratified by facility size and institutional region, including N facilities, N residents, all-feature missing percent overall, all-feature missing percent among dead residents, all-feature missing percent among alive residents, and death rate. It also requested a chi-square test for institution ID by overall all-feature missing percent.",
                 "",
+                "## Key Correction",
+                "",
+                "The local Development cohort cache (`Revision/20260523/training_data_1014_cached_for_completion.csv`) has `dbname` missing for all 23,901 rows because the original notebook/script applied numeric coercion to the full Google Sheet. The original `training_data_1014` Google Sheet retains confirmed resident-level `dbname`. After numeric cleaning, the raw Google Sheet matches the local cache row-for-row, so the confirmed `dbname` can be safely reattached by row order.",
+                "",
+                "Confirmed Development cohort counts from the raw sheet:",
+                "",
+                "- Development residents: 23,901",
+                "- Development deaths: 5,272",
+                "- Confirmed unique `dbname`: 493",
+                "- Unique `H01_NUM`: 2,057 (`H01_NUM` is not the LTCF count)",
+                "- Facility roster rows in `DATA/area_size.xlsx`: 493",
+                "",
                 "## Files Produced",
                 "",
                 "- `0609_development_facility_missingness_form.xlsx`",
                 "- `0609_development_facility_missingness_form.csv`",
-                "- `0609_exploratory_mapped_facility_missingness_form.csv`",
-                "- `0609_exploratory_mapping_audit.csv`",
-                "- `0609_h01num_missingness_chi_square.csv`",
+                "- `0609_dbname_missingness_chi_square.csv`",
+                "- `0609_h01num_missingness_chi_square.csv` (diagnostic only)",
                 "- `0609_missingness_indicator_key_features_regression_with_p.xlsx`",
                 "- `0609_missingness_indicator_key_features_regression_with_p.csv`",
                 "",
@@ -525,19 +420,18 @@ def main() -> None:
                 "",
                 "The all-feature missingness calculation uses the 29 model predictor features listed in `RESULTS/tables/shap_feature_importance.xlsx`, matching the feature list shown in the 0609 PDF. `死亡標記` from `selected_features.xlsx` is the outcome and is not counted as a predictor feature.",
                 "",
-                "## Data Limitation",
+                "## Facility-Level Table",
                 "",
-                "The current project files do not contain a usable resident-level `dbname` / facility linkage for the Development cohort model cache (`Revision/20260523/training_data_1014_cached_for_completion.csv`). In that file, `dbname` is empty for all 23,901 rows. Therefore, resident counts, dead/alive all-feature missingness, and death rates by facility size or institutional region cannot be estimated reliably from the saved Development cohort cache.",
+                "`0609_development_facility_missingness_form.csv` is now the confirmed facility-level table. It uses raw resident-level `dbname` merged to `DATA/area_size.xlsx`, so N residents, dead/alive all-feature missingness, and death rate are estimable by facility size and institutional region.",
                 "",
-                "The `N facilities` column in the requested form was filled from `DATA/area_size.xlsx`, sheet `訓練資料_機構大小`. Other resident-level columns are marked as not estimable in the workbook.",
+                "## Chi-Square Test",
                 "",
-                "## Exploratory Mapping Attempt",
+                "`0609_dbname_missingness_chi_square.csv` is the confirmed facility-level chi-square test: `dbname x all-feature missing/observed cells`. The older `H01_NUM` result is retained only as a diagnostic because `H01_NUM` has 2,057 groups and should not be interpreted as the number of LTCFs.",
                 "",
-                "An additional sheet, `Exploratory mapped form`, uses a modal H01_NUM-to-dbname map derived from local excluded/supplemental files and then merges to `DATA/area_size.xlsx`. This provides a complete numeric table, but it is exploratory. The `Exploratory mapping audit` sheet reports coverage and ambiguity. In the current data, many H01_NUM values have many candidate dbname values, so this should not replace confirmed resident-level facility linkage.",
-                "",
-                "## Chi-square Test",
-                "",
-                "Because `dbname` is absent in the Development cohort cache, the chi-square sheet uses `H01_NUM` as the only available repeated identifier in the analytic cache. This should be treated as exploratory unless `H01_NUM` is confirmed to be the intended institution ID.",
+                f"dbname chi-square statistic: {chi_square.loc[0, 'Chi-square statistic']:.6f}",
+                f"dbname chi-square df: {int(chi_square.loc[0, 'df'])}",
+                "dbname chi-square p value: <0.001",
+                f"dbname chi-square Cramer's V: {cramers_v:.6f}",
                 "",
                 f"Number of prediction features counted: {len(features)}",
                 f"Development cohort rows: {len(dev)}",
@@ -547,6 +441,177 @@ def main() -> None:
         + "\n",
         encoding="utf-8",
     )
+
+
+def write_readme() -> None:
+    (OUT / "README.md").write_text(
+        "\n".join(
+            [
+                "# 0609 請蔡老師協助部分：結果檔案對應",
+                "",
+                "來源 PDF：`0609_請蔡老師協助的部分.pdf`",
+                "",
+                "本資料夾已依 PDF 逐項整理結果。優先開啟：",
+                "",
+                "`0609_development_facility_missingness_form.xlsx`",
+                "",
+                "## 重要修正：機構數與 dbname",
+                "",
+                "原本 0609 cache 檔 `Revision/20260523/training_data_1014_cached_for_completion.csv` 的 `dbname` 全部為空，是因為原始 notebook/script 對整份 Google Sheet 做 numeric coercion，文字型機構代碼被轉成 NaN。原始 `training_data_1014` Google Sheet 仍保留 confirmed resident-level `dbname`，且 numeric-clean 後與本地 cache row-by-row 一致。",
+                "",
+                "目前可驗證的 Development cohort 數字：",
+                "",
+                "- 住民數：23,901",
+                "- 死亡數：5,272",
+                "- confirmed unique `dbname`：493",
+                "- unique `H01_NUM`：2,057，這不是機構數",
+                "- `DATA/area_size.xlsx` facility roster：493 家",
+                "",
+                "因此正式 facility-level 分析使用 `dbname`，不再用 `H01_NUM` 代表機構。",
+                "",
+                "## 1. Internal calibration metrics with 95% CI",
+                "",
+                "- `calibration_metrics_internal_hybridxgbrf_with_ci.xlsx`",
+                "- `0609_development_facility_missingness_form.xlsx`，sheet `Internal calibration CI`",
+                "",
+                "## 2. Internal risk-decile calibration",
+                "",
+                "- `risk_decile_calibration_internal_hybridxgbrf.xlsx`",
+                "- `0609_development_facility_missingness_form.xlsx`，sheet `Internal risk decile`",
+                "",
+                "## 3. Development cohort facility size / institutional region missingness table",
+                "",
+                "正式表：",
+                "",
+                "- `0609_development_facility_missingness_form.xlsx`，sheet `Requested form`",
+                "- `0609_development_facility_missingness_form.csv`",
+                "",
+                "此表已用原始 Google Sheet 的 confirmed `dbname` 接回 `DATA/area_size.xlsx`，因此可估計 N facilities、N residents、overall/dead/alive all-feature missingness 與 death rate。",
+                "",
+                "## 4. Chi-square test: institution ID x overall missingness",
+                "",
+                "正式 facility-level 檢定：",
+                "",
+                "- `0609_development_facility_missingness_form.xlsx`，sheet `Chi-square dbname`",
+                "- `0609_dbname_missingness_chi_square.csv`",
+                "",
+                "結果為 `dbname x all-feature missing/observed cells`：N dbname groups = 493，df = 492，P < 0.001。",
+                "",
+                "診斷用 H01_NUM 檔案：",
+                "",
+                "- `0609_h01num_missingness_chi_square.csv`",
+                "",
+                "`H01_NUM` 有 2,057 groups，只能視為 documentation/resident identifier 診斷，不可解讀為 LTCF 家數。",
+                "",
+                "## 5. ALL Feature 清單",
+                "",
+                "- `0609_development_facility_missingness_form.xlsx`，sheet `Feature list`",
+                "- 來源：`../../RESULTS/tables/shap_feature_importance.xlsx`",
+                "",
+                "ALL Feature 使用 29 個模型 predictor features；`死亡標記` 是 outcome，不納入 all-feature missingness 的 predictor feature 計算。",
+                "",
+                "## 6. missingness_indicator_key_features_regression 補意識總分Max_missing 與 P value",
+                "",
+                "- `0609_missingness_indicator_key_features_regression_with_p.xlsx`",
+                "- `0609_missingness_indicator_key_features_regression_with_p.csv`",
+                "- `0609_development_facility_missingness_form.xlsx`，sheet `Key missingness regression`",
+                "",
+                "已新增：",
+                "",
+                "- `Consciousness_total_max_missing`",
+                "- Source variable：`意識總分Max`",
+                "- P value / formatted P value",
+                "",
+                "## 7. 可重跑程式",
+                "",
+                "- `generate_0609_facility_missingness_form.py`",
+                "",
+                "此程式會重建主 workbook、confirmed dbname facility-level 表、dbname chi-square 表、H01_NUM 診斷表，以及補 P value 的 missingness indicator regression 表。",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def main() -> None:
+    OUT.mkdir(parents=True, exist_ok=True)
+
+    dev_raw = load_development_cohort_raw()
+    external_raw = load_external_cohort_raw()
+    dev_cache = load_development_cache()
+    external_cache = load_external_cache()
+    roster = load_facility_roster()
+    model_features = load_model_feature_list()
+    features = feature_columns(dev_raw, model_features)
+
+    cache_match, cache_mismatches = validate_raw_matches_cache(dev_raw, dev_cache)
+    dev = add_roster(dev_raw, roster)
+    requested = summarize_facility_strata(dev, features)
+    overall_missingness = overall_development_missingness(dev, features)
+    dbname_detail, dbname_chi_square = dbname_missingness_chi_square(dev, features)
+    h01_detail, h01_summary = h01_diagnostic(dev, features)
+    key_missingness_regression = missingness_indicator_key_features_regression(dev_raw, external_raw)
+    audit = data_availability_audit(
+        dev_raw,
+        dev_cache,
+        external_raw,
+        external_cache,
+        roster,
+        features,
+        cache_match,
+        cache_mismatches,
+    )
+    internal_calibration = pd.read_csv(INTERNAL_CALIBRATION)
+    internal_risk_decile = pd.read_csv(INTERNAL_RISK_DECILE)
+
+    output_xlsx = OUT / "0609_development_facility_missingness_form.xlsx"
+    with pd.ExcelWriter(output_xlsx) as writer:
+        internal_calibration.to_excel(writer, index=False, sheet_name="Internal calibration CI")
+        internal_risk_decile.to_excel(writer, index=False, sheet_name="Internal risk decile")
+        requested.to_excel(writer, index=False, sheet_name="Requested form")
+        overall_missingness.to_excel(writer, index=False, sheet_name="Overall dev missingness")
+        model_features.to_excel(writer, index=False, sheet_name="Feature list")
+        dbname_chi_square.to_excel(writer, index=False, sheet_name="Chi-square dbname")
+        dbname_detail.sort_values("Overall missing percent", ascending=False).to_excel(
+            writer, index=False, sheet_name="dbname missingness detail"
+        )
+        h01_summary.to_excel(writer, index=False, sheet_name="H01 diagnostic")
+        h01_detail.sort_values("Overall missing percent", ascending=False).to_excel(
+            writer, index=False, sheet_name="H01 missingness detail"
+        )
+        key_missingness_regression.to_excel(writer, index=False, sheet_name="Key missingness regression")
+        audit.to_excel(writer, index=False, sheet_name="Data availability audit")
+
+    requested.to_csv(OUT / "0609_development_facility_missingness_form.csv", index=False, encoding="utf-8-sig")
+    dbname_chi_square.to_csv(OUT / "0609_dbname_missingness_chi_square.csv", index=False, encoding="utf-8-sig")
+    dbname_detail.to_csv(OUT / "0609_dbname_missingness_detail.csv", index=False, encoding="utf-8-sig")
+    h01_summary.to_csv(OUT / "0609_h01num_missingness_chi_square.csv", index=False, encoding="utf-8-sig")
+    key_missingness_regression.to_csv(
+        OUT / "0609_missingness_indicator_key_features_regression_with_p.csv",
+        index=False,
+        encoding="utf-8-sig",
+    )
+    with pd.ExcelWriter(OUT / "0609_missingness_indicator_key_features_regression_with_p.xlsx") as writer:
+        key_missingness_regression.to_excel(writer, index=False, sheet_name="Logistic regression")
+
+    # Keep the old exploratory filenames from being mistaken as current formal outputs.
+    deprecated = pd.DataFrame(
+        [
+            {
+                "Status": "Deprecated",
+                "Reason": (
+                    "Confirmed resident-level dbname is available from the original training_data_1014 Google Sheet. "
+                    "Use 0609_development_facility_missingness_form.csv and 0609_dbname_missingness_chi_square.csv."
+                ),
+            }
+        ]
+    )
+    deprecated.to_csv(OUT / "0609_exploratory_mapped_facility_missingness_form.csv", index=False, encoding="utf-8-sig")
+    deprecated.to_csv(OUT / "0609_exploratory_mapping_audit.csv", index=False, encoding="utf-8-sig")
+
+    write_notes(dev_raw, features, dbname_chi_square)
+    write_readme()
 
 
 if __name__ == "__main__":

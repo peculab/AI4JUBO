@@ -1,0 +1,2 @@
+﻿Test,Chi-square statistic,df,P value,Table-ready P value,Cramer's V,N dbname groups,Total feature cells,Missing feature cells,Observed feature cells,Important note
+dbname x all-feature missing/observed cells,140785.9752238896,492,0.0,<0.001,0.45068454136691993,493,693129,54243,638886,Computed using confirmed resident-level dbname from the original training_data_1014 Google Sheet. The local numeric cache has dbname missing because text identifiers were coerced to NaN.
