@@ -8,8 +8,8 @@ Examples
 Run with local files:
     python revision_generate_results.py --training training_data_1014.xlsx --external external_validation_1014.xlsx
 
-Run with Google Sheets, matching the original notebook:
-    python revision_generate_results.py --use-google-sheets
+Run with bundled synthetic demonstration data:
+    python revision_generate_results.py --use-synthetic-data
 
 Notes
 -----
@@ -72,6 +72,8 @@ except Exception as exc:  # pragma: no cover
 WORKDIR = Path(__file__).resolve().parent
 DEFAULT_RESULTS_DIR = WORKDIR / "RESULTS"
 DEFAULT_REVISION_OUTPUT_DIR = WORKDIR / "Revision" / "20260608"
+DEFAULT_SYNTHETIC_TRAINING = WORKDIR / "SYNTHETIC_DATA" / "training_data_1014_synthetic.csv"
+DEFAULT_SYNTHETIC_EXTERNAL = WORKDIR / "SYNTHETIC_DATA" / "external_validation_1014_synthetic.csv"
 
 REVISION_FIGURE_ALIASES = {
     "decision_curve_external_validation": "0608_decision_curve_external_validation_focus.png",
@@ -81,11 +83,6 @@ REVISION_FIGURE_ALIASES = {
     "external_validation_confusion_matrices": "0608_external_validation_confusion_matrices_with_accuracy_from_0605.png",
     "internal_cv_confusion_matrices": "0608_internal_cv_confusion_matrices_with_accuracy_from_0605.png",
 }
-
-TRAINING_SHEET_URL = "https://docs.google.com/spreadsheets/d/1qljyp9lq3QsZ7O2O7FQxm7taEWQi3F3bZgNMcQ7NJeE/edit?usp=sharing"
-EXTERNAL_SHEET_URL = "https://docs.google.com/spreadsheets/d/1NFAhP8NUVsxzEq55siFA0yHvnXY5GWqiKGSOKC4y1Qg/edit?usp=sharing"
-TRAINING_WORKSHEET = "training_data_1014"
-EXTERNAL_WORKSHEET = "external_validation_1014"
 
 OUTCOME_COL = "死亡標記"
 DROP_COLUMNS = ["H01_NUM", "觀察天數"]
@@ -138,7 +135,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate revision analyses into RESULTS.")
     parser.add_argument("--training", type=str, default=None, help="Path to training_data_1014 csv/xlsx.")
     parser.add_argument("--external", type=str, default=None, help="Path to external_validation_1014 csv/xlsx.")
-    parser.add_argument("--use-google-sheets", action="store_true", help="Read the original Google Sheets.")
+    parser.add_argument("--use-synthetic-data", action="store_true", help="Read bundled synthetic demonstration CSV files.")
     parser.add_argument("--results-dir", type=str, default=str(DEFAULT_RESULTS_DIR), help="Output directory.")
     parser.add_argument(
         "--revision-output-dir",
@@ -181,36 +178,6 @@ def read_table(path: str | Path) -> pd.DataFrame:
     return numeric_clean(df)
 
 
-def read_google_sheet(url: str, worksheet_name: str) -> pd.DataFrame:
-    public_xlsx_url = url.split("/edit", 1)[0] + "/export?format=xlsx"
-    try:
-        return numeric_clean(pd.read_excel(public_xlsx_url, sheet_name=worksheet_name))
-    except Exception:
-        pass
-
-    try:
-        import gspread
-        from google.colab import auth  # type: ignore
-
-        auth.authenticate_user()
-        from google.auth import default  # type: ignore
-
-        creds, _ = default()
-        gc = gspread.authorize(creds)
-    except Exception:
-        try:
-            import gspread
-
-            gc = gspread.oauth()
-        except Exception as exc:
-            raise RuntimeError(
-                "Could not authenticate Google Sheets. Use --training and --external local files, "
-                "or run in Colab with Google authentication."
-            ) from exc
-    ws = gc.open_by_url(url).worksheet(worksheet_name)
-    return numeric_clean(pd.DataFrame(ws.get_all_records()))
-
-
 def numeric_clean(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     for col in out.columns:
@@ -221,14 +188,16 @@ def numeric_clean(df: pd.DataFrame) -> pd.DataFrame:
 def load_data(args: argparse.Namespace) -> tuple[pd.DataFrame, pd.DataFrame]:
     if args.training and args.external:
         return read_table(args.training), read_table(args.external)
-    if args.use_google_sheets:
-        return (
-            read_google_sheet(TRAINING_SHEET_URL, TRAINING_WORKSHEET),
-            read_google_sheet(EXTERNAL_SHEET_URL, EXTERNAL_WORKSHEET),
-        )
+    if getattr(args, "use_synthetic_data", False):
+        if not DEFAULT_SYNTHETIC_TRAINING.exists() or not DEFAULT_SYNTHETIC_EXTERNAL.exists():
+            raise SystemExit(
+                "Synthetic demonstration files are missing. Run:\n"
+                "python SYNTHETIC_DATA/generate_synthetic_data.py"
+            )
+        return read_table(DEFAULT_SYNTHETIC_TRAINING), read_table(DEFAULT_SYNTHETIC_EXTERNAL)
     raise SystemExit(
-        "Please provide --training and --external local files, or use --use-google-sheets.\n"
-        "The workspace currently does not contain local csv/xlsx source data."
+        "Please provide --training and --external authorized local files, or use --use-synthetic-data.\n"
+        "The public repository does not contain real resident-level source data or embedded Google Sheet URLs."
     )
 
 

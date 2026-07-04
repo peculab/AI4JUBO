@@ -2,8 +2,8 @@
 Survival sensitivity analyses for the JUBO revision.
 
 This script uses the currently available columns:
-    - 觀察天數: follow-up/observation days
-    - 死亡標記: event indicator
+    - source-data observation-days column: follow-up/observation days
+    - source-data death-flag column: event indicator
 
 It creates pragmatic time-to-event sensitivity outputs under a 180-day
 administrative horizon. Residents without death before 180 days are censored
@@ -47,7 +47,7 @@ HORIZON = 180
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--use-google-sheets", action="store_true", default=True)
+    parser.add_argument("--use-synthetic-data", action="store_true", default=True)
     parser.add_argument("--training", default=None)
     parser.add_argument("--external", default=None)
     parser.add_argument("--horizon", type=int, default=HORIZON)

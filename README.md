@@ -6,21 +6,57 @@ This repository contains the analysis materials for the manuscript:
 
 The repository has been cleaned to keep only the submitted manuscript analysis, revision scripts, generated revision outputs, and submission/revision documents.
 
+## Manuscript-Facing Entry Point
+
+For paper submission, reviewer response, and code-availability review, start here:
+
+```text
+MANUSCRIPT_PACKAGE/README.md
+```
+
+That folder consolidates the manuscript-facing code and output references so readers do not need to choose among dated revision folders. Legacy materials have been centralized locally under `ARCHIVE_DO_NOT_CITE/` for provenance only and are ignored by Git.
+
+Direct navigation:
+
+- `MANUSCRIPT_PACKAGE/code_catalog.md`: canonical scripts and historical/provenance code.
+- `MANUSCRIPT_PACKAGE/data_dictionary.md`: privacy-preserving description of real data fields and attributes.
+- `MANUSCRIPT_PACKAGE/results_catalog.md`: direct links to the tables and figures.
+- `MANUSCRIPT_PACKAGE/legacy_revision_map.md`: how to interpret older revision folders.
+
+## Data Privacy and Synthetic Demonstration Data
+
+Real resident-level source data have been removed from this repository and are not distributed with the code. The `DATA/` folder now contains only a data-availability notice. Do not commit real CSV, XLSX, or other resident-level exports to the repository.
+
+For a privacy-preserving demonstration, generate synthetic files:
+
+```powershell
+python SYNTHETIC_DATA/generate_synthetic_data.py
+```
+
+Then run a fast smoke test:
+
+```powershell
+python revision_generate_results.py --training SYNTHETIC_DATA/training_data_1014_synthetic.csv --external SYNTHETIC_DATA/external_validation_1014_synthetic.csv --results-dir SYNTHETIC_DATA/demo_results --n-boot 20 --n-boot-fast 20 --skip-cv --skip-shap
+```
+
+Synthetic outputs are for code demonstration only and must not be interpreted as manuscript results.
+
 ## Repository Contents
 
 ```text
 AI4JUBO/
-|-- FINAL/
-|   `-- Submitted manuscript, appendices, and original submitted figures
-|-- Revision/
-|   `-- Reviewer comments, response mapping files, and revision planning notes
+|-- ARCHIVE_DO_NOT_CITE/
+|   `-- Local-only ignored archive for legacy outputs and notebook provenance
+|-- DATA/
+|   `-- Data-availability notice only; real source data removed
+|-- MANUSCRIPT_PACKAGE/
+|   `-- Consolidated manuscript-facing code and results catalog
 |-- RESULTS/
 |   |-- tables/    Generated CSV/XLSX revision tables
 |   |-- figures/   Generated HTML/PNG revision figures
 |   |-- package_versions.txt
 |   |-- model_identity_note.txt
 |   `-- survival_analysis_note.txt
-|-- jubodeath_v9_puredata_paper.ipynb
 |-- revision_generate_results.py
 |-- survival_generate_results.py
 |-- README.md
@@ -28,9 +64,6 @@ AI4JUBO/
 ```
 
 ## Main Analysis Code
-
-- `jubodeath_v9_puredata_paper.ipynb`  
-  Final notebook corresponding to the submitted manuscript analyses.
 
 - `revision_generate_results.py`  
   Generates revision tables and figures, including:
@@ -53,16 +86,20 @@ AI4JUBO/
   - Kaplan-Meier curves by predicted-risk tertile
   - log-rank test across risk groups
 
+The original notebook and notebook-exported Python file have been moved to the local ignored `ARCHIVE_DO_NOT_CITE/` folder and are retained only for provenance.
+
 ## Data Source
 
-The individual-level data are not stored in this repository because of privacy and data-use restrictions.
+The individual-level data have been removed from this repository because of privacy and data-use restrictions.
 
-The analysis scripts read the same Google Sheets data sources referenced in the final notebook:
+The analysis scripts can read authorized local CSV/XLSX exports that are stored outside version control. The public repository does not include embedded Google Sheet URLs or real source-data links.
 
-- Development cohort: `training_data_1014`
-- Temporal external validation cohort: `external_validation_1014`
+Expected local file roles:
 
-The scripts also support local CSV/XLSX files if the data are exported locally.
+- Development cohort file, commonly named `training_data_1014`
+- Temporal external validation cohort file, commonly named `external_validation_1014`
+
+The scripts also support local CSV/XLSX files if authorized data are exported locally outside version control. For public demonstration, use the synthetic files under `SYNTHETIC_DATA/`.
 
 ## Reproducing Revision Outputs
 
@@ -71,13 +108,13 @@ Run from the repository root (`.`).
 Generate main revision results:
 
 ```powershell
-python revision_generate_results.py --use-google-sheets
+python revision_generate_results.py --use-synthetic-data
 ```
 
 Generate survival sensitivity results:
 
 ```powershell
-python survival_generate_results.py --use-google-sheets
+python survival_generate_results.py --use-synthetic-data
 ```
 
 If local files are available:
@@ -181,4 +218,4 @@ RESULTS/survival_analysis_note.txt
 
 ## Data and Code Availability Statement
 
-The individual-level dataset cannot be publicly shared because of privacy and data-use restrictions. The analysis scripts, preprocessing details, random seeds, package versions, and generated aggregate outputs are provided to support reproducibility within the limits of data governance.
+The real individual-level dataset has been removed from this repository and cannot be publicly shared because of privacy and data-use restrictions. The analysis scripts, preprocessing details, random seeds, synthetic demonstration files, and generated aggregate outputs are provided to support reproducibility within the limits of data governance.

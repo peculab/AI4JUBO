@@ -152,6 +152,18 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# Restricted source data
+DATA/*
+!DATA/README.md
+/training_data_1014*
+/external_validation_1014*
+*.sav
+*.dta
+ARCHIVE_DO_NOT_CITE/
+
+# Synthetic demo outputs
+SYNTHETIC_DATA/demo_results/
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
